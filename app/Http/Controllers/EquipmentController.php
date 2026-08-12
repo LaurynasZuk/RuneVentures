@@ -37,8 +37,7 @@ class EquipmentController extends Controller
             }
 
             $item = $stack->item;
-            $targetSlot = $item->equip_slot;
-            if (! $targetSlot) {
+            if (! $item->equip_slot) {
                 return 'Šio daikto negalima ekipuoti.';
             }
 
@@ -53,6 +52,7 @@ class EquipmentController extends Controller
                 ->get()
                 ->keyBy('slot');
 
+            $targetSlot = $this->resolveTargetSlot($item, $equipment);
             $target = $equipment->get($targetSlot);
             if (! $target) {
                 return 'Netinkamas equipment slotas.';
@@ -155,6 +155,24 @@ class EquipmentController extends Controller
             ->with(['skills', 'backpacks.item'])
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
+    }
+
+    private function resolveTargetSlot(Item $item, $equipment): string
+    {
+        $logicalSlot = $item->equip_slot;
+        $candidates = match ($logicalSlot) {
+            'ring' => ['ring', 'ring2'],
+            'trinket' => ['trinket1', 'trinket2'],
+            default => [$logicalSlot],
+        };
+
+        foreach ($candidates as $candidate) {
+            if ($equipment->get($candidate) && ! $equipment->get($candidate)->item) {
+                return $candidate;
+            }
+        }
+
+        return $candidates[0];
     }
 
     private function meetsRequirement(Player $player, Item $item): bool
