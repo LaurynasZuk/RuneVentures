@@ -26,6 +26,7 @@ class GameController extends Controller
                 'hitpoints' => $player->hitpoints,
                 'maxHitpoints' => $player->max_hitpoints,
                 'prayerPoints' => $player->prayer_points,
+                'combatLevel' => $this->combatLevel($player),
             ],
             'location' => [
                 'id' => $player->location->id,
@@ -41,7 +42,7 @@ class GameController extends Controller
             ],
             'skills' => $player->skills->mapWithKeys(fn (PlayerSkill $skill) => [$skill->skill => [
                 'xp' => $skill->xp,
-                'level' => $this->levelForXp($skill->xp),
+                'level' => $this->levelForXp($skill->xp, $skill->skill === 'hitpoints' ? 10 : 1),
             ]]),
             'inventory' => $player->inventory->map(fn (InventoryItem $slot) => [
                 'id' => $slot->item->id,
@@ -57,6 +58,7 @@ class GameController extends Controller
     {
         $player = $this->player($request);
         abort_unless($player->location->destinations()->whereKey($location->id)->exists(), 403);
+
         $player->update(['location_id' => $location->id]);
 
         return back()->with('game', "Atvykai į {$location->name}.");
@@ -68,55 +70,138 @@ class GameController extends Controller
         abort_unless(in_array($player->location->slug, ['starter-village', 'whispering-woods'], true), 403);
 
         DB::transaction(function () use ($player) {
-            $skill = PlayerSkill::query()->lockForUpdate()->firstOrCreate(
-                ['player_id' => $player->id, 'skill' => 'woodcutting'],
-                ['xp' => 0],
-            );
-            $skill->increment('xp', 25);
-
-            $logs = Item::firstOrCreate(['slug' => 'logs'], ['name' => 'Logs', 'icon' => 'logs', 'stackable' => true]);
-            $slot = InventoryItem::firstOrCreate(
-                ['player_id' => $player->id, 'item_id' => $logs->id],
-                ['quantity' => 0],
-            );
-            $slot->increment('quantity');
+            $this->grantXp($player, 'woodcutting', 25);
+            $this->grantItem($player, 'logs', 'Logs', 'logs');
         });
 
         return back()->with('game', '+1 Logs · +25 Woodcutting XP');
+    }
+
+    public function attack(Request $request, string $monster): RedirectResponse
+    {
+        $player = $this->player($request);
+        $monsterData = collect($this->locationContent($player->location->slug)['monsters'])
+            ->firstWhere('slug', $monster);
+
+        abort_unless($monsterData, 404);
+
+        DB::transaction(function () use ($player, $monsterData) {
+            $damageTaken = max(0, (int) $monsterData['level'] - 1);
+            $remainingHp = max(1, $player->hitpoints - $damageTaken);
+            $player->update(['hitpoints' => $remainingHp]);
+
+            $this->grantXp($player, 'attack', (int) $monsterData['xp']);
+            $this->grantXp($player, 'hitpoints', max(1, (int) floor($monsterData['xp'] / 3)));
+            $this->grantItem($player, 'bones', 'Bones', 'bones');
+        });
+
+        return back()->with(
+            'game',
+            "Nugalėjai {$monsterData['name']} · +{$monsterData['xp']} Attack XP · +1 Bones",
+        );
     }
 
     private function player(Request $request): Player
     {
         $start = Location::firstOrCreate(
             ['slug' => 'starter-village'],
-            ['name' => 'Aldor Village', 'description' => 'A quiet frontier settlement where every adventure begins.', 'region' => 'Greenreach'],
+            [
+                'name' => 'Aldor Village',
+                'description' => 'A quiet frontier settlement where every adventure begins.',
+                'region' => 'Greenreach',
+            ],
         );
 
-        return Player::firstOrCreate(
+        $player = Player::firstOrCreate(
             ['user_id' => $request->user()->id],
             ['location_id' => $start->id, 'name' => $request->user()->name],
         );
+
+        foreach (['attack', 'strength', 'defence', 'hitpoints', 'ranged', 'magic', 'prayer', 'woodcutting', 'mining', 'fishing', 'cooking'] as $skill) {
+            PlayerSkill::firstOrCreate(
+                ['player_id' => $player->id, 'skill' => $skill],
+                ['xp' => $skill === 'hitpoints' ? 900 : 0],
+            );
+        }
+
+        return $player;
     }
 
-    private function levelForXp(int $xp): int
+    private function grantXp(Player $player, string $skill, int $amount): void
     {
-        return min(99, 1 + (int) floor(sqrt($xp / 100)));
+        $row = PlayerSkill::query()->lockForUpdate()->firstOrCreate(
+            ['player_id' => $player->id, 'skill' => $skill],
+            ['xp' => 0],
+        );
+
+        $row->increment('xp', $amount);
+    }
+
+    private function grantItem(Player $player, string $slug, string $name, string $icon): void
+    {
+        $item = Item::firstOrCreate(
+            ['slug' => $slug],
+            ['name' => $name, 'icon' => $icon, 'stackable' => true],
+        );
+
+        $slot = InventoryItem::firstOrCreate(
+            ['player_id' => $player->id, 'item_id' => $item->id],
+            ['quantity' => 0],
+        );
+
+        $slot->increment('quantity');
+    }
+
+    private function levelForXp(int $xp, int $startingLevel = 1): int
+    {
+        return min(99, max($startingLevel, $startingLevel + (int) floor(sqrt($xp / 100))));
+    }
+
+    private function combatLevel(Player $player): int
+    {
+        $skills = $player->skills->keyBy('skill');
+        $level = fn (string $name, int $default = 1) => $this->levelForXp((int) ($skills->get($name)?->xp ?? 0), $default);
+
+        $base = 0.25 * ($level('defence') + $level('hitpoints', 10) + floor($level('prayer') / 2));
+        $melee = 0.325 * ($level('attack') + $level('strength'));
+        $ranged = 0.325 * floor($level('ranged') * 1.5);
+        $magic = 0.325 * floor($level('magic') * 1.5);
+
+        return max(3, (int) floor($base + max($melee, $ranged, $magic)));
     }
 
     private function locationContent(string $slug): array
     {
         return match ($slug) {
             'whispering-woods' => [
-                'objects' => [['name' => 'Abandoned shrine', 'detail' => 'Ancient runes cover the stone.']],
-                'npcs' => [['name' => 'Elowen', 'detail' => 'Wandering herbalist']],
-                'resources' => [['name' => 'Old tree', 'action' => 'chop', 'requiredLevel' => 1]],
-                'monsters' => [['name' => 'Forest spider', 'level' => 3]],
+                'objects' => [
+                    ['name' => 'Abandoned shrine', 'detail' => 'Ancient runes cover the stone.'],
+                ],
+                'npcs' => [
+                    ['name' => 'Elowen', 'detail' => 'Wandering herbalist'],
+                ],
+                'resources' => [
+                    ['name' => 'Old tree', 'action' => 'chop', 'requiredLevel' => 1],
+                ],
+                'monsters' => [
+                    ['name' => 'Forest spider', 'slug' => 'forest-spider', 'level' => 3, 'xp' => 18],
+                ],
             ],
             default => [
-                'objects' => [['name' => 'Village well', 'detail' => 'The water is cold and clear.'], ['name' => 'Bank chest', 'detail' => 'Coming soon']],
-                'npcs' => [['name' => 'Elder Rowan', 'detail' => 'Village elder'], ['name' => 'Mara', 'detail' => 'General store keeper']],
-                'resources' => [['name' => 'Tree', 'action' => 'chop', 'requiredLevel' => 1]],
-                'monsters' => [['name' => 'Giant rat', 'level' => 2]],
+                'objects' => [
+                    ['name' => 'Village well', 'detail' => 'The water is cold and clear.'],
+                    ['name' => 'Bank chest', 'detail' => 'Coming soon'],
+                ],
+                'npcs' => [
+                    ['name' => 'Elder Rowan', 'detail' => 'Village elder'],
+                    ['name' => 'Mara', 'detail' => 'General store keeper'],
+                ],
+                'resources' => [
+                    ['name' => 'Tree', 'action' => 'chop', 'requiredLevel' => 1],
+                ],
+                'monsters' => [
+                    ['name' => 'Giant rat', 'slug' => 'giant-rat', 'level' => 2, 'xp' => 12],
+                ],
             ],
         };
     }
