@@ -18,6 +18,7 @@ import {
     Heart,
     House,
     LockKeyhole,
+    Map,
     Orbit,
     Package,
     PawPrint,
@@ -264,12 +265,17 @@ export default function Game({
         if (drag.current?.pointerId === event.pointerId) drag.current = null;
     };
 
+    const openWorld = () => {
+        setSelectedSkill(null);
+        setTab(null);
+    };
+
     return (
         <div className="game-shell">
             <Head title={`${location.name} · RuneVentures`} />
 
             <header className="player-bar">
-                <button className="avatar" onClick={() => setTab(null)} aria-label="Atverti vietovę">
+                <button className="avatar" onClick={openWorld} aria-label="Atverti vietovę">
                     <UserRound size={20} />
                 </button>
                 <div className="player-copy">
@@ -277,13 +283,19 @@ export default function Game({
                     <span>LVL: {player.combatLevel}</span>
                 </div>
                 <div className="vitals">
-                    <div className="vital-bar hp-bar">
-                        <i style={{ width: `${Math.min(100, (player.hitpoints / Math.max(1, player.maxHitpoints)) * 100)}%` }} />
-                        <span>HP {player.hitpoints}/{player.maxHitpoints}</span>
+                    <div className="vital-row">
+                        <span className="vital-label">HP</span>
+                        <div className="vital-bar hp-bar">
+                            <i style={{ width: `${Math.min(100, (player.hitpoints / Math.max(1, player.maxHitpoints)) * 100)}%` }} />
+                            <span>{player.hitpoints}/{player.maxHitpoints}</span>
+                        </div>
                     </div>
-                    <div className="vital-bar prayer-bar">
-                        <i style={{ width: `${Math.min(100, (player.prayerMana / Math.max(1, player.maxPrayerMana)) * 100)}%` }} />
-                        <span>Prayer {player.prayerMana}/{player.maxPrayerMana}</span>
+                    <div className="vital-row">
+                        <span className="vital-label">MP</span>
+                        <div className="vital-bar prayer-bar">
+                            <i style={{ width: `${Math.min(100, (player.prayerMana / Math.max(1, player.maxPrayerMana)) * 100)}%` }} />
+                            <span>{player.prayerMana}/{player.maxPrayerMana}</span>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -426,7 +438,7 @@ export default function Game({
                 )}
 
                 {tab === 'combat' && (
-                    <Panel title="Combat">
+                    <Panel title="Combat" onWorld={openWorld}>
                         <div className="combat-level-card osrs-combat-level combat-level-only">
                             <span>Combat level</span>
                             <strong>{player.combatLevel}</strong>
@@ -453,7 +465,7 @@ export default function Game({
                 )}
 
                 {tab === 'skills' && (
-                    <Panel title="Stats">
+                    <Panel title="Stats" onWorld={openWorld}>
                         <div className="osrs-skill-grid">
                             {skillNames.map((name) => {
                                 const data = skill(name);
@@ -476,7 +488,7 @@ export default function Game({
                 )}
 
                 {tab === 'inventory' && (
-                    <Panel title="Inventory">
+                    <Panel title="Inventory" onWorld={openWorld}>
                         <div className="inventory-view-tabs">
                             <button
                                 className={inventoryView === 'items' ? 'active' : ''}
@@ -591,7 +603,7 @@ export default function Game({
                 )}
 
                 {tab === 'prayer' && (
-                    <Panel title="Prayer">
+                    <Panel title="Prayer" onWorld={openWorld}>
                         <div className="prayer-mana-card">
                             <div className="prayer-mana-heading">
                                 <WandSparkles size={22} />
@@ -609,12 +621,12 @@ export default function Game({
                 )}
 
                 {tab === 'settings' && (
-                    <Panel title="Settings">
+                    <Panel title="Settings" onWorld={openWorld}>
                         <div className="settings-list">
                             <button onClick={() => router.visit('/settings/profile')}>
                                 <span>Account settings</span><ChevronRight size={18} />
                             </button>
-                            <button onClick={() => setTab(null)}>
+                            <button onClick={openWorld}>
                                 <span>Return to location</span><ChevronRight size={18} />
                             </button>
                         </div>
@@ -623,6 +635,7 @@ export default function Game({
             </main>
 
             <nav className="bottom-nav">
+                <Nav icon={<Map />} label="World" active={tab === null} onClick={openWorld} />
                 <Nav icon={<Swords />} label="Combat" active={tab === 'combat'} onClick={() => setTab('combat')} />
                 <Nav icon={<Sparkles />} label="Stats" active={tab === 'skills'} onClick={() => setTab('skills')} />
                 <Nav icon={<Backpack />} label="Inventory" active={tab === 'inventory'} onClick={() => setTab('inventory')} />
@@ -673,10 +686,10 @@ export default function Game({
     );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({ title, children, onWorld }: { title: string; children: React.ReactNode; onWorld: () => void }) {
     return (
         <section className="panel">
-            <button className="back-to-world" onClick={() => router.visit('/dashboard')}>RuneVentures</button>
+            <button className="back-to-world" onClick={onWorld}>RuneVentures</button>
             <h1>{title}</h1>
             {children}
         </section>
