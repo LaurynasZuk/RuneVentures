@@ -19,17 +19,20 @@ class ShopController extends Controller
 
     private const DEFAULT_STOCK = [
         ['slug' => 'pot', 'name' => 'Pot', 'icon' => 'pot', 'stock' => 5, 'sell' => 1, 'buy' => 0, 'value' => 1],
-        ['slug' => 'jug', 'name' => 'Jug', 'icon' => 'jug', 'stock' => 2, 'sell' => 1, 'buy' => 0, 'value' => 1],
-        ['slug' => 'empty-jug-pack', 'name' => 'Empty jug pack', 'icon' => 'package', 'stock' => 5, 'sell' => 182, 'buy' => 56, 'value' => 140],
         ['slug' => 'shears', 'name' => 'Shears', 'icon' => 'tool', 'stock' => 2, 'sell' => 1, 'buy' => 0, 'value' => 1],
         ['slug' => 'bucket', 'name' => 'Bucket', 'icon' => 'bucket', 'stock' => 3, 'sell' => 2, 'buy' => 0, 'value' => 2],
         ['slug' => 'bowl', 'name' => 'Bowl', 'icon' => 'bowl', 'stock' => 2, 'sell' => 5, 'buy' => 1, 'value' => 4],
-        ['slug' => 'cake-tin', 'name' => 'Cake tin', 'icon' => 'cake-tin', 'stock' => 2, 'sell' => 13, 'buy' => 4, 'value' => 10],
         ['slug' => 'tinderbox', 'name' => 'Tinderbox', 'icon' => 'tinderbox', 'stock' => 2, 'sell' => 1, 'buy' => 0, 'value' => 1],
         ['slug' => 'chisel', 'name' => 'Chisel', 'icon' => 'chisel', 'stock' => 2, 'sell' => 1, 'buy' => 0, 'value' => 1],
         ['slug' => 'hammer', 'name' => 'Hammer', 'icon' => 'hammer', 'stock' => 5, 'sell' => 1, 'buy' => 0, 'value' => 1],
-        ['slug' => 'newcomer-map', 'name' => 'Newcomer map', 'icon' => 'map', 'stock' => 5, 'sell' => 1, 'buy' => 0, 'value' => 1],
-        ['slug' => 'security-book', 'name' => 'Security book', 'icon' => 'book', 'stock' => 5, 'sell' => 2, 'buy' => 1, 'value' => 2],
+    ];
+
+    private const REMOVED_STOCK_SLUGS = [
+        'security-book',
+        'newcomer-map',
+        'cake-tin',
+        'empty-jug-pack',
+        'jug',
     ];
 
     public function __construct(private readonly InventoryService $inventory)
@@ -137,6 +140,10 @@ class ShopController extends Controller
                 return 'Daikto parduoti nepavyko.';
             }
 
+            if (in_array($stack->item->slug, self::REMOVED_STOCK_SLUGS, true)) {
+                return 'Pardavėjas šio daikto neperka.';
+            }
+
             $stock = ShopStock::query()
                 ->where('shop_key', self::SHOP_KEY)
                 ->where('item_id', $stack->item_id)
@@ -192,6 +199,17 @@ class ShopController extends Controller
 
     private function ensureDefaultStock(): void
     {
+        $removedItemIds = Item::query()
+            ->whereIn('slug', self::REMOVED_STOCK_SLUGS)
+            ->pluck('id');
+
+        if ($removedItemIds->isNotEmpty()) {
+            ShopStock::query()
+                ->where('shop_key', self::SHOP_KEY)
+                ->whereIn('item_id', $removedItemIds)
+                ->delete();
+        }
+
         foreach (self::DEFAULT_STOCK as $definition) {
             $item = Item::firstOrCreate(
                 ['slug' => $definition['slug']],
