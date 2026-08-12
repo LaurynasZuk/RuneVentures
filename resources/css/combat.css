@@ -1,0 +1,205 @@
+@layer components {
+    .combat-page main {
+        padding: 1rem;
+        padding-bottom: 6rem;
+    }
+
+    .combat-arena {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: stretch;
+        gap: .7rem;
+    }
+
+    .combat-fighter {
+        min-width: 0;
+        padding: .85rem;
+        border: 1px solid #625950;
+        background: linear-gradient(145deg, rgba(82, 55, 40, .24), #111113 72%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 1px 0 #050506;
+    }
+
+    .combat-fighter-label {
+        display: block;
+        margin-bottom: .2rem;
+        color: #817b74;
+        font-size: .58rem;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+    }
+
+    .combat-fighter strong {
+        display: block;
+        overflow: hidden;
+        color: #e4ded5;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: .9rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .combat-fighter small {
+        display: block;
+        margin-top: .15rem;
+        color: #89837c;
+        font-size: .62rem;
+    }
+
+    .combat-hp-line {
+        display: flex;
+        justify-content: space-between;
+        gap: .5rem;
+        margin-top: .75rem;
+        color: #9e9891;
+        font-size: .65rem;
+    }
+
+    .combat-hp-line b {
+        color: #d7d1c9;
+    }
+
+    .combat-hp-bar,
+    .combat-timer-bar {
+        height: .45rem;
+        margin-top: .3rem;
+        overflow: hidden;
+        border: 1px solid #49433e;
+        background: #08080a;
+    }
+
+    .combat-hp-bar i {
+        display: block;
+        height: 100%;
+        background: #903d37;
+        transition: width .2s linear;
+    }
+
+    .combat-versus {
+        display: grid;
+        place-items: center;
+        color: #aaa49c;
+    }
+
+    .combat-timers {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: .7rem;
+        margin-top: 1rem;
+    }
+
+    .combat-timer-card {
+        padding: .8rem;
+        border: 1px solid #6a5d53;
+        background: linear-gradient(180deg, #1c1717 0%, #111113 100%);
+    }
+
+    .combat-timer-card.monster-timer {
+        border-color: #5c5752;
+    }
+
+    .combat-timer-heading {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: .6rem;
+    }
+
+    .combat-timer-heading > svg {
+        color: #c0b9b0;
+    }
+
+    .combat-timer-heading > div {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .combat-timer-heading span {
+        color: #8f8982;
+        font-size: .58rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .combat-timer-heading strong {
+        color: #e2dcd3;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 1rem;
+    }
+
+    .combat-timer-heading small {
+        color: #817b74;
+        font-size: .58rem;
+        white-space: nowrap;
+    }
+
+    .combat-timer-bar i {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, #74503a, #b08a6d);
+        transition: width .1s linear;
+    }
+
+    .monster-timer .combat-timer-bar i {
+        background: linear-gradient(90deg, #4f4b48, #9c9690);
+    }
+
+    .combat-timer-card p {
+        margin-top: .35rem;
+        color: #7d7771;
+        font-size: .58rem;
+    }
+
+    .combat-event {
+        margin-top: .8rem;
+        padding: .7rem .8rem;
+        border-left: 2px solid #8b6045;
+        background: #141214;
+        color: #bcb6ae;
+        font-size: .7rem;
+    }
+
+    .combat-leave,
+    .combat-result button,
+    .combat-empty button {
+        width: 100%;
+        min-height: 2.8rem;
+        margin-top: 1rem;
+        border: 1px solid #725f52;
+        background: linear-gradient(180deg, #302119, #1c1614);
+        color: #d8d2ca;
+        font-size: .72rem;
+        font-weight: 700;
+    }
+
+    .combat-result {
+        margin-top: 1rem;
+        padding: 1rem;
+        border: 1px solid #645b54;
+        background: #141214;
+        text-align: center;
+    }
+
+    .combat-result > strong {
+        color: #e0dad2;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 1.2rem;
+    }
+
+    .combat-empty {
+        min-height: 60vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #aaa49c;
+        text-align: center;
+    }
+
+    .combat-empty h1 {
+        margin-top: .6rem;
+        color: #e2dcd3;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 1.35rem;
+    }
+}
