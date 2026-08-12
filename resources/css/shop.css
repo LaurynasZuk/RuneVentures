@@ -1,3 +1,5 @@
+@import './equipment-layout.css';
+
 @layer components {
     .shop-page main {
         padding: .8rem;
