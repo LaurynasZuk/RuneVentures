@@ -40,6 +40,6 @@
     }
 
     .game-shell .equipment-grid .slot-weapon::after { content: '1H / 2H'; }
-    .game-shell .equipment-grid .slot-shield::after { content: 'Off-hand'; }
+    .game-shell .equipment-grid .slot-shield::after { content: 'Shield'; }
     .game-shell .equipment-grid .slot-ammo::after { content: 'Ammo'; }
 }
