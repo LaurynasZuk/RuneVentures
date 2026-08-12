@@ -16,23 +16,35 @@
     gap: .25rem;
     padding: .75rem .25rem calc(.75rem + env(safe-area-inset-bottom));
     border: 0;
-    border-left: 1px solid #4a3a30;
-    border-right: 1px solid #4a3a30;
-    background: #231a16;
-    color: #e0dad1;
-    box-shadow: inset 0 2px 0 #8a5d3d;
+    border-left: 1px solid transparent;
+    border-right: 1px solid transparent;
+    background: rgba(14, 14, 16, .97);
+    color: #8c8882;
+    box-shadow: none;
     backdrop-filter: blur(10px);
 }
 
 .game-home-nav-button svg {
     width: 1.25rem;
     height: 1.25rem;
-    color: #d1cbc2;
+    color: #aaa59d;
 }
 
 .game-home-nav-button span {
     font-size: .625rem;
     line-height: 1;
+}
+
+body:not(:has(.bottom-nav button.active)) .game-home-nav-button {
+    border-left-color: #4a3a30;
+    border-right-color: #4a3a30;
+    background: #231a16;
+    color: #e0dad1;
+    box-shadow: inset 0 2px 0 #8a5d3d;
+}
+
+body:not(:has(.bottom-nav button.active)) .game-home-nav-button svg {
+    color: #d1cbc2;
 }
 
 .game-home-nav-button:active {
