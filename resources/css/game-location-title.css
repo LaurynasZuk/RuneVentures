@@ -30,16 +30,20 @@
     display: none;
 }
 
-/* Compact world overview: show more connected locations at once. */
+/* Compact world overview with player-centered, bounded panning. */
 .world-map-viewport {
-    height: 19rem;
+    height: 15rem;
 }
 
 .world-map-canvas {
-    left: 1rem;
-    top: .25rem;
-    scale: .57;
+    --world-map-scale: .57;
+    --map-offset-x: 0px;
+    --map-offset-y: 0px;
+    left: 0;
+    top: 0;
+    scale: none;
     transform-origin: 0 0;
+    transform: translate3d(var(--map-offset-x), var(--map-offset-y), 0) scale(var(--world-map-scale)) !important;
 }
 
 /* Keep nodes and labels readable while the map itself is zoomed out. */
@@ -49,6 +53,6 @@
 
 @media (max-width: 420px) {
     .world-map-viewport {
-        height: 19rem;
+        height: 15rem;
     }
 }
