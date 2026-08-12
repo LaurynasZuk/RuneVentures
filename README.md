@@ -44,6 +44,8 @@ Open `http://127.0.0.1:8000` and use the seeded account:
 
 ## Free test deployment: Render + Neon
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/LaurynasZuk/RuneVentures/tree/feat/playable-location-game)
+
 This branch includes a `Dockerfile`, `render.yaml`, and `docker/render-start.sh` for a zero-cost test deployment using a Render Free web service and a Neon Free PostgreSQL database.
 
 ### 1. Create Neon database
@@ -56,11 +58,11 @@ postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require
 
 Do not commit the real connection string to GitHub.
 
-### 2. Create Render Blueprint
+### 2. Deploy with Render
 
-In Render, create a new Blueprint from this GitHub repository and select the `feat/playable-location-game` branch. Render reads `render.yaml` automatically.
+Open this branch on GitHub and press **Deploy to Render**. Render will use the `feat/playable-location-game` branch and read `render.yaml` automatically.
 
-When Render asks for the `DATABASE_URL` secret, paste the Neon connection string.
+When Render asks for the `DATABASE_URL` secret, paste the Neon connection string directly into Render.
 
 The Blueprint configures:
 
@@ -79,9 +81,10 @@ On each service start, `docker/render-start.sh`:
 
 1. creates the Laravel `APP_KEY` value from the Render-generated secret;
 2. maps `DATABASE_URL` to Laravel's `DB_URL`;
-3. runs `php artisan migrate --force`;
-4. caches production Laravel configuration and views;
-5. starts Apache on Render's assigned `$PORT`.
+3. sets `APP_URL` from Render's public service URL;
+4. runs `php artisan migrate --force`;
+5. caches production Laravel configuration and views;
+6. starts Apache on Render's assigned `$PORT`.
 
 Database data remains in Neon even when the Render Free service spins down.
 
