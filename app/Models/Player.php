@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class Player extends Model
 {
@@ -22,6 +23,20 @@ class Player extends Model
         'backpack_slots_unlocked',
         'starter_weapon_claimed',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (Player $player): void {
+            if (! Schema::hasTable('player_equipment')) {
+                return;
+            }
+
+            PlayerEquipment::firstOrCreate([
+                'player_id' => $player->id,
+                'slot' => 'belt',
+            ]);
+        });
+    }
 
     protected function casts(): array
     {
