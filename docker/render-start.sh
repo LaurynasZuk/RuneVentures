@@ -7,6 +7,10 @@ if [ -z "${APP_KEY:-}" ] && [ -n "${APP_KEY_VALUE:-}" ]; then
     export APP_KEY="base64:${APP_KEY_VALUE}"
 fi
 
+if [ -z "${APP_URL:-}" ] && [ -n "${RENDER_EXTERNAL_URL:-}" ]; then
+    export APP_URL="${RENDER_EXTERNAL_URL}"
+fi
+
 if [ -z "${DB_URL:-}" ] && [ -n "${DATABASE_URL:-}" ]; then
     export DB_URL="${DATABASE_URL}"
 fi
