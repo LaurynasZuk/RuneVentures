@@ -22,9 +22,9 @@ return [
     | Fortify Password Broker
     |--------------------------------------------------------------------------
     |
-    | Here you may specify which password broker Fortify can use when a user
-    | is resetting their password. This configured value should match one
-    | of your password brokers setup in your "auth" configuration file.
+    | Here you may specify which password broker Fortify can use when resetting
+    | passwords. This configured value should match one of your password
+    | brokers that is already present in your "auth" configuration file.
     |
     */
 
@@ -61,7 +61,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'home' => '/dashboard',
+    'home' => '/main',
 
     /*
     |--------------------------------------------------------------------------
