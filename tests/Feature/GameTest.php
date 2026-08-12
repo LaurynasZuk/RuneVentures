@@ -19,7 +19,7 @@ class GameTest extends TestCase
         $user = User::factory()->create(['email_verified_at' => now()]);
 
         $this->actingAs($user)
-            ->get(route('dashboard'))
+            ->get(route('main'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('game')
@@ -30,7 +30,7 @@ class GameTest extends TestCase
     public function test_chopping_grants_logs_and_woodcutting_xp(): void
     {
         $user = User::factory()->create(['email_verified_at' => now()]);
-        $this->actingAs($user)->get(route('dashboard'));
+        $this->actingAs($user)->get(route('main'));
 
         $this->actingAs($user)->post(route('game.chop'))->assertRedirect();
 
@@ -42,7 +42,7 @@ class GameTest extends TestCase
     public function test_player_can_only_travel_through_a_location_connection(): void
     {
         $user = User::factory()->create(['email_verified_at' => now()]);
-        $this->actingAs($user)->get(route('dashboard'));
+        $this->actingAs($user)->get(route('main'));
         $destination = Location::create([
             'name' => 'Hidden Valley',
             'slug' => 'hidden-valley',
