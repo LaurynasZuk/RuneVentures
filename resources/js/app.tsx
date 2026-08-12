@@ -2,6 +2,7 @@ import '../css/auth.css';
 import '../css/game-map.css';
 import '../css/game-systems.css';
 import '../css/game-home-nav.css';
+import '../css/game-location-title.css';
 import { createInertiaApp, router, usePage } from '@inertiajs/react';
 import { Map } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
