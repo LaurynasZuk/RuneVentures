@@ -20,6 +20,7 @@ class Player extends Model
         'prayer_mana',
         'inventory_base_slots',
         'backpack_slots_unlocked',
+        'starter_weapon_claimed',
     ];
 
     protected function casts(): array
@@ -31,6 +32,7 @@ class Player extends Model
             'prayer_mana' => 'integer',
             'inventory_base_slots' => 'integer',
             'backpack_slots_unlocked' => 'integer',
+            'starter_weapon_claimed' => 'boolean',
             'travel_ends_at' => 'datetime',
         ];
     }
