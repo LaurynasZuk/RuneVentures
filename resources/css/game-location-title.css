@@ -1,0 +1,30 @@
+@layer components {
+    .current-location-line {
+        margin-bottom: 0;
+        padding: .85rem 1rem;
+        border: 1px solid #686058;
+        border-bottom: 1px solid #4d4742;
+        border-left: 1px solid #686058;
+        background: linear-gradient(180deg, #211914 0%, #151315 100%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+    }
+
+    .current-location-line span {
+        color: #8e8982;
+        font-size: .68rem;
+        letter-spacing: .14em;
+    }
+
+    .current-location-line strong {
+        color: #e5dfd7;
+        font-size: 1rem;
+    }
+
+    .world-map-section {
+        border-top: 0;
+    }
+
+    .world-map-title {
+        display: none;
+    }
+}
