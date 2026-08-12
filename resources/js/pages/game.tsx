@@ -1,9 +1,11 @@
 import { Head, router } from '@inertiajs/react';
 import {
     Backpack,
+    Box,
     ChevronRight,
     Cog,
-    Map,
+    Landmark,
+    MapPin,
     Shield,
     Sparkles,
     Swords,
@@ -11,19 +13,12 @@ import {
     UserRound,
     Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 type Tab = 'combat' | 'skills' | 'inventory' | 'prayer' | 'settings';
 type Skill = { xp: number; level: number };
-type ContentItem = {
-    name: string;
-    detail?: string;
-    action?: string;
-    requiredLevel?: number;
-    level?: number;
-    slug?: string;
-    xp?: number;
-};
+type MapNode = { id: number; name: string; type: string; x: number; y: number };
+type MapEdge = { from: number; to: number };
 
 interface Props {
     player: {
@@ -36,15 +31,14 @@ interface Props {
     location: {
         id: number;
         name: string;
+        slug: string;
         region: string;
         description: string;
         connections: { id: number; name: string; travelSeconds: number }[];
-        content: {
-            objects: ContentItem[];
-            npcs: ContentItem[];
-            resources: ContentItem[];
-            monsters: ContentItem[];
-        };
+    };
+    worldMap: {
+        nodes: MapNode[];
+        edges: MapEdge[];
     };
     skills: Record<string, Skill>;
     inventory: { id: number; name: string; icon: string; quantity: number }[];
@@ -65,10 +59,45 @@ const skillNames = [
     'cooking',
 ];
 
-export default function Game({ player, location, skills, inventory, flash }: Props) {
+const locationCategories = [
+    { key: 'monsters', label: 'Monstrai', icon: Swords },
+    { key: 'npcs', label: 'Personažai', icon: Users },
+    { key: 'resources', label: 'Resursai', icon: TreePine },
+    { key: 'objects', label: 'Objektai', icon: Box },
+];
+
+export default function Game({ player, location, worldMap, skills, inventory, flash }: Props) {
     const [tab, setTab] = useState<Tab | null>(null);
+    const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
+    const drag = useRef<{ pointerId: number; x: number; y: number; offsetX: number; offsetY: number } | null>(null);
     const post = (url: string) => router.post(url, {}, { preserveScroll: true });
     const skill = (name: string) => skills[name] ?? { level: name === 'hitpoints' ? 10 : 1, xp: 0 };
+    const connectedIds = new Set(location.connections.map((connection) => connection.id));
+    const nodeById = new Map(worldMap.nodes.map((node) => [node.id, node]));
+
+    const beginMapDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        drag.current = {
+            pointerId: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            offsetX: mapOffset.x,
+            offsetY: mapOffset.y,
+        };
+    };
+
+    const moveMap = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!drag.current || drag.current.pointerId !== event.pointerId) return;
+
+        setMapOffset({
+            x: drag.current.offsetX + event.clientX - drag.current.x,
+            y: drag.current.offsetY + event.clientY - drag.current.y,
+        });
+    };
+
+    const endMapDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (drag.current?.pointerId === event.pointerId) drag.current = null;
+    };
 
     return (
         <div className="game-shell">
@@ -95,49 +124,101 @@ export default function Game({ player, location, skills, inventory, flash }: Pro
 
                 {tab === null && (
                     <>
-                        <section className="location-hero">
-                            <div className="eyebrow"><Map size={13} /> {location.region}</div>
-                            <h1>{location.name}</h1>
-                            <p>{location.description}</p>
+                        <div className="current-location-line">
+                            <span>Lokacija</span>
+                            <strong>{location.name}</strong>
+                        </div>
+
+                        <section className="world-map-section">
+                            <div className="world-map-title">
+                                <div>
+                                    <span>Vietovės žemėlapis</span>
+                                    <small>Tempk žemėlapį pirštu</small>
+                                </div>
+                                <Landmark size={19} />
+                            </div>
+
+                            <div
+                                className="world-map-viewport"
+                                onPointerDown={beginMapDrag}
+                                onPointerMove={moveMap}
+                                onPointerUp={endMapDrag}
+                                onPointerCancel={endMapDrag}
+                            >
+                                <div
+                                    className="world-map-canvas"
+                                    style={{ transform: `translate3d(${mapOffset.x}px, ${mapOffset.y}px, 0)` }}
+                                >
+                                    <svg className="world-map-lines" viewBox="0 0 760 300" aria-hidden="true">
+                                        {worldMap.edges.map((edge) => {
+                                            const from = nodeById.get(edge.from);
+                                            const to = nodeById.get(edge.to);
+                                            if (!from || !to) return null;
+
+                                            return (
+                                                <line
+                                                    key={`${edge.from}-${edge.to}`}
+                                                    x1={from.x}
+                                                    y1={from.y}
+                                                    x2={to.x}
+                                                    y2={to.y}
+                                                />
+                                            );
+                                        })}
+                                    </svg>
+
+                                    {worldMap.nodes.map((node) => {
+                                        const isCurrent = node.id === location.id;
+                                        const canTravel = connectedIds.has(node.id);
+
+                                        return (
+                                            <button
+                                                key={node.id}
+                                                type="button"
+                                                className={`world-map-node${isCurrent ? ' current' : ''}${canTravel ? ' reachable' : ''}`}
+                                                style={{ left: node.x, top: node.y }}
+                                                onPointerDown={(event) => event.stopPropagation()}
+                                                onClick={() => {
+                                                    if (canTravel && !isCurrent) post(`/game/travel/${node.id}`);
+                                                }}
+                                                disabled={!isCurrent && !canTravel}
+                                            >
+                                                <span className="world-map-dot"><MapPin size={17} /></span>
+                                                <span className="world-map-node-copy">
+                                                    <small>{node.type}</small>
+                                                    <strong>{node.name}</strong>
+                                                    {canTravel && !isCurrent && <em>Keliauti</em>}
+                                                    {isCurrent && <em>Dabartinė vieta</em>}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </section>
 
-                        <GameSection
-                            title="Vietovės"
-                            icon={<Map size={18} />}
-                            items={location.connections.map((connection) => ({
-                                name: connection.name,
-                                detail: `${connection.travelSeconds} sec kelionė`,
-                            }))}
-                            onClick={(index) => post(`/game/travel/${location.connections[index].id}`)}
-                        />
+                        <section className="location-menu-section">
+                            <div className="location-menu-heading">
+                                <div>
+                                    <strong>{location.name}</strong>
+                                    <span>{location.description}</span>
+                                </div>
+                            </div>
 
-                        <GameSection title="Objektai" icon={<Shield size={18} />} items={location.content.objects} />
-                        <GameSection title="NPC" icon={<Users size={18} />} items={location.content.npcs} />
-                        <GameSection
-                            title="Resursai"
-                            icon={<TreePine size={18} />}
-                            items={location.content.resources.map((resource) => ({
-                                ...resource,
-                                detail: resource.requiredLevel ? `Reikia lygio ${resource.requiredLevel}` : resource.detail,
-                            }))}
-                            onClick={(index) => {
-                                if (location.content.resources[index].action === 'chop') {
-                                    post('/game/actions/chop');
-                                }
-                            }}
-                        />
-                        <GameSection
-                            title="Monstrai"
-                            icon={<Swords size={18} />}
-                            items={location.content.monsters.map((monster) => ({
-                                ...monster,
-                                detail: `Combat ${monster.level} · ${monster.xp} XP`,
-                            }))}
-                            onClick={(index) => {
-                                const monster = location.content.monsters[index];
-                                if (monster.slug) post(`/game/actions/attack/${monster.slug}`);
-                            }}
-                        />
+                            <div className="location-category-grid">
+                                {locationCategories.map(({ key, label, icon: Icon }) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => router.visit(`/game/location/${location.id}/${key}`)}
+                                    >
+                                        <Icon size={18} />
+                                        <span>{label}</span>
+                                        <ChevronRight size={16} />
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
                     </>
                 )}
 
@@ -228,32 +309,6 @@ export default function Game({ player, location, skills, inventory, flash }: Pro
                 <Nav icon={<Cog />} label="Settings" active={tab === 'settings'} onClick={() => setTab('settings')} />
             </nav>
         </div>
-    );
-}
-
-function GameSection({
-    title,
-    icon,
-    items,
-    onClick,
-}: {
-    title: string;
-    icon: React.ReactNode;
-    items: ContentItem[];
-    onClick?: (index: number) => void;
-}) {
-    return (
-        <section className="game-section">
-            <h2>{icon}{title}<span>{items.length}</span></h2>
-            <div className="action-list">
-                {items.map((item, index) => (
-                    <button key={`${item.name}-${index}`} onClick={() => onClick?.(index)}>
-                        <span>{item.name}<small>{item.detail}</small></span>
-                        <ChevronRight size={18} />
-                    </button>
-                ))}
-            </div>
-        </section>
     );
 }
 
