@@ -19,38 +19,28 @@
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
-
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
-
     --color-popover: var(--popover);
     --color-popover-foreground: var(--popover-foreground);
-
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
-
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
-
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
-
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
-
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
-
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
-
     --color-chart-1: var(--chart-1);
     --color-chart-2: var(--chart-2);
     --color-chart-3: var(--chart-3);
     --color-chart-4: var(--chart-4);
     --color-chart-5: var(--chart-5);
-
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar-primary: var(--sidebar-primary);
@@ -133,34 +123,75 @@
 }
 
 @layer base {
-    * {
-        @apply border-border;
-    }
-
-    body {
-        @apply bg-background text-foreground;
-    }
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground; }
 }
 
 @layer components {
     .game-shell { @apply mx-auto min-h-screen max-w-2xl bg-[#101713] pb-24 text-[#e8eadf]; background-image: radial-gradient(circle at top, #233328 0, #101713 26rem); }
     .player-bar { @apply sticky top-0 z-20 flex items-center gap-3 border-b border-white/10 bg-[#111914]/95 px-4 py-3 backdrop-blur; }
     .avatar { @apply grid size-10 place-items-center rounded-full border border-[#c6a866]/40 bg-[#29382c] text-[#dbc17d]; }
-    .player-copy { @apply flex min-w-0 flex-1 flex-col; } .player-copy strong { @apply truncate font-serif text-base; } .player-copy span { @apply text-[11px] uppercase tracking-wider text-[#8e9a90]; }
-    .vitals { @apply w-28 text-right text-[11px] text-[#b8c0b7]; } .vitals div { @apply mt-1 h-1.5 overflow-hidden rounded-full bg-black/40; } .vitals i { @apply block h-full bg-[#9d3f36]; }
+    .player-copy { @apply flex min-w-0 flex-1 flex-col; }
+    .player-copy strong { @apply truncate font-serif text-base; }
+    .player-copy span { @apply text-[11px] uppercase tracking-wider text-[#8e9a90]; }
+    .vitals { @apply w-28 text-right text-[11px] text-[#b8c0b7]; }
+    .vitals div { @apply mt-1 h-1.5 overflow-hidden rounded-full bg-black/40; }
+    .vitals i { @apply block h-full bg-[#9d3f36]; }
+
     .game-shell main { @apply px-4 py-5; }
     .game-toast { @apply mb-4 rounded-lg border border-[#b99d5a]/30 bg-[#b99d5a]/10 px-4 py-3 text-sm text-[#ead79d]; }
-    .location-hero { @apply mb-7 border-l-2 border-[#c2a35e] py-2 pl-4; } .eyebrow { @apply mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.22em] text-[#b99d64]; }
-    .location-hero h1,.panel h1 { @apply font-serif text-3xl font-semibold tracking-wide text-[#f3edda]; } .location-hero p { @apply mt-2 max-w-lg text-sm leading-6 text-[#aeb7ae]; }
-    .game-section { @apply mb-7; } .game-section h2 { @apply mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.18em] text-[#bec6bc]; } .game-section h2 span { @apply ml-auto rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-[#7f8c81]; }
-    .action-list { @apply overflow-hidden rounded-xl border border-white/8 bg-[#172019]/85; } .action-list button { @apply flex w-full items-center justify-between border-b border-white/6 px-4 py-3 text-left transition last:border-0 hover:bg-[#253128] disabled:cursor-not-allowed disabled:opacity-55; }
-    .action-list button>span { @apply flex flex-col text-sm font-medium; } .action-list small { @apply mt-0.5 text-xs font-normal text-[#7f8c81]; } .action-list svg { @apply text-[#756d50]; }
+    .location-hero { @apply mb-7 border-l-2 border-[#c2a35e] py-2 pl-4; }
+    .eyebrow { @apply mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.22em] text-[#b99d64]; }
+    .location-hero h1, .panel h1 { @apply font-serif text-3xl font-semibold tracking-wide text-[#f3edda]; }
+    .location-hero p { @apply mt-2 max-w-lg text-sm leading-6 text-[#aeb7ae]; }
+
+    .game-section { @apply mb-7; }
+    .game-section h2 { @apply mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.18em] text-[#bec6bc]; }
+    .game-section h2 span { @apply ml-auto rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-[#7f8c81]; }
+    .action-list { @apply overflow-hidden rounded-xl border border-white/8 bg-[#172019]/85; }
+    .action-list button { @apply flex w-full items-center justify-between border-b border-white/6 px-4 py-3 text-left transition last:border-0 hover:bg-[#253128]; }
+    .action-list button > span { @apply flex flex-col text-sm font-medium; }
+    .action-list small { @apply mt-0.5 text-xs font-normal text-[#7f8c81]; }
+    .action-list svg { @apply text-[#756d50]; }
+
     .bottom-nav { @apply fixed right-0 bottom-0 left-0 z-30 mx-auto flex max-w-2xl border-t border-white/10 bg-[#101612]/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur; }
-    .bottom-nav button { @apply flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] text-[#737f75]; } .bottom-nav svg { @apply size-5; } .bottom-nav button.active { @apply text-[#d8bd79]; }
-    .panel { @apply min-h-[70vh] pt-3; } .panel h1 { @apply mb-6; } .panel h3 { @apply mt-8 mb-3 text-xs uppercase tracking-widest text-[#919b91]; }
-    .stats-grid { @apply grid grid-cols-2 gap-3; } .stats-grid>div { @apply flex items-center justify-between rounded-xl border border-white/8 bg-[#18211a] p-4; } .stats-grid span { @apply capitalize text-sm text-[#9ca69c]; } .stats-grid b { @apply font-serif text-2xl text-[#dfc782]; }
-    .choice-row { @apply grid grid-cols-3 gap-2; } .choice-row button { @apply rounded-lg border border-white/10 bg-[#1b251e] px-2 py-3 text-xs hover:border-[#c0a45e]/50; }
-    .skill-list { @apply overflow-hidden rounded-xl border border-white/8; } .skill-row { @apply grid grid-cols-[1fr_2rem_5rem] items-center border-b border-white/6 bg-[#172019] px-4 py-3 last:border-0; } .skill-row span { @apply capitalize; } .skill-row b { @apply text-[#dec47d]; } .skill-row small { @apply text-right text-[#788479]; }
-    .inventory-grid { @apply grid grid-cols-4 gap-2; } .item-slot { @apply relative aspect-square rounded-lg border border-white/7 bg-black/15; } .item-slot.filled { @apply flex flex-col items-center justify-center gap-1 border-[#bca15d]/30 bg-[#252d22] text-[#d7bd77]; } .item-slot span { @apply text-[9px] text-[#b6beb3]; } .item-slot b { @apply absolute right-1.5 bottom-1 text-xs; }
-    .prayer-list { @apply space-y-2; } .prayer-list button { @apply flex w-full items-center gap-3 rounded-xl border border-white/8 bg-[#18211a] p-4 text-left text-[#a9b1a8]; } .prayer-list small { @apply ml-auto text-[#657066]; }
+    .bottom-nav button { @apply flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] text-[#737f75]; }
+    .bottom-nav svg { @apply size-5; }
+    .bottom-nav button.active { @apply text-[#d8bd79]; }
+
+    .panel { @apply min-h-[70vh] pt-3; }
+    .panel h1 { @apply mb-6; }
+    .panel h3 { @apply mt-8 mb-3 text-xs uppercase tracking-widest text-[#919b91]; }
+    .back-to-world { @apply mb-2 text-[11px] font-semibold uppercase tracking-[.22em] text-[#b99d64]; }
+    .combat-level-card { @apply mb-4 flex items-center justify-between rounded-xl border border-[#c0a45e]/20 bg-[#1a241c] px-4 py-3; }
+    .combat-level-card span { @apply text-sm text-[#9ca69c]; }
+    .combat-level-card strong { @apply font-serif text-2xl text-[#dfc782]; }
+
+    .stats-grid { @apply grid grid-cols-2 gap-3; }
+    .stats-grid > div { @apply flex items-center justify-between rounded-xl border border-white/8 bg-[#18211a] p-4; }
+    .stats-grid span { @apply capitalize text-sm text-[#9ca69c]; }
+    .stats-grid b { @apply font-serif text-2xl text-[#dfc782]; }
+    .choice-row { @apply grid grid-cols-3 gap-2; }
+    .choice-row button { @apply rounded-lg border border-white/10 bg-[#1b251e] px-2 py-3 text-xs hover:border-[#c0a45e]/50; }
+
+    .skill-list { @apply overflow-hidden rounded-xl border border-white/8; }
+    .skill-row { @apply grid grid-cols-[1fr_2rem_5rem] items-center border-b border-white/6 bg-[#172019] px-4 py-3 last:border-0; }
+    .skill-row span { @apply capitalize; }
+    .skill-row b { @apply text-[#dec47d]; }
+    .skill-row small { @apply text-right text-[#788479]; }
+
+    .inventory-grid { @apply grid grid-cols-4 gap-2; }
+    .item-slot { @apply relative aspect-square rounded-lg border border-white/7 bg-black/15; }
+    .item-slot.filled { @apply flex flex-col items-center justify-center gap-1 border-[#bca15d]/30 bg-[#252d22] text-[#d7bd77]; }
+    .item-slot span { @apply text-[9px] text-[#b6beb3]; }
+    .item-slot .item-glyph { @apply text-xl text-[#d7bd77]; }
+    .item-slot b { @apply absolute right-1.5 bottom-1 text-xs; }
+
+    .prayer-list { @apply space-y-2; }
+    .prayer-list button { @apply flex w-full items-center gap-3 rounded-xl border border-white/8 bg-[#18211a] p-4 text-left text-[#a9b1a8]; }
+    .prayer-list small { @apply ml-auto text-[#657066]; }
+
+    .settings-list { @apply overflow-hidden rounded-xl border border-white/8 bg-[#172019]; }
+    .settings-list button { @apply flex w-full items-center justify-between border-b border-white/6 px-4 py-4 text-left text-sm last:border-0 hover:bg-[#253128]; }
+    .settings-list svg { @apply text-[#756d50]; }
 }
