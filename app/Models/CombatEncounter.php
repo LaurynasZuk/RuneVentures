@@ -22,6 +22,8 @@ class CombatEncounter extends Model
         'player_max_hit',
         'player_next_attack_at',
         'monster_next_attack_at',
+        'player_next_attack_ms',
+        'monster_next_attack_ms',
         'status',
         'last_event',
     ];
@@ -38,6 +40,8 @@ class CombatEncounter extends Model
             'player_max_hit' => 'integer',
             'player_next_attack_at' => 'datetime',
             'monster_next_attack_at' => 'datetime',
+            'player_next_attack_ms' => 'integer',
+            'monster_next_attack_ms' => 'integer',
         ];
     }
 
