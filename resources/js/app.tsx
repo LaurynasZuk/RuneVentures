@@ -1,10 +1,8 @@
 import '../css/auth.css';
 import '../css/game-map.css';
 import '../css/game-systems.css';
-import '../css/game-home-nav.css';
 import '../css/game-location-title.css';
-import { createInertiaApp, router, usePage } from '@inertiajs/react';
-import { Map } from 'lucide-react';
+import { createInertiaApp } from '@inertiajs/react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -13,29 +11,6 @@ import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
-
-function GameHomeNavButton() {
-    const page = usePage();
-
-    if (page.component !== 'game') {
-        return null;
-    }
-
-    return (
-        <button
-            className="game-home-nav-button"
-            type="button"
-            onClick={() => router.visit('/dashboard', {
-                preserveState: false,
-                preserveScroll: false,
-            })}
-            aria-label="Grįžti į pagrindinį žemėlapį"
-        >
-            <Map size={20} />
-            <span>World</span>
-        </button>
-    );
-}
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -58,7 +33,6 @@ createInertiaApp({
         return (
             <TooltipProvider delayDuration={0}>
                 {app}
-                <GameHomeNavButton />
                 <Toaster />
             </TooltipProvider>
         );
@@ -68,5 +42,4 @@ createInertiaApp({
     },
 });
 
-// This will set light / dark mode on load...
 initializeTheme();
