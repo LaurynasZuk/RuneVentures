@@ -5,6 +5,7 @@ import '../css/game-home-nav.css';
 import '../css/game-location-title.css';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { Map } from 'lucide-react';
+import { useEffect } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -42,6 +43,64 @@ function GameHomeNavButton() {
     );
 }
 
+function LiveGameTimers() {
+    useEffect(() => {
+        const deadlines = new WeakMap<HTMLElement, number>();
+        const templates = new WeakMap<HTMLElement, string>();
+
+        const tick = () => {
+            document.querySelectorAll<HTMLElement>('.game-toast').forEach((element) => {
+                if (element.style.display === 'none') {
+                    return;
+                }
+
+                if (!deadlines.has(element)) {
+                    const text = element.textContent ?? '';
+                    const match = text.match(/(\d+)\s*s\b/i);
+
+                    if (!match) {
+                        return;
+                    }
+
+                    deadlines.set(element, Date.now() + Number(match[1]) * 1000);
+                    templates.set(element, text);
+                }
+
+                const deadline = deadlines.get(element);
+                const template = templates.get(element);
+
+                if (!deadline || !template) {
+                    return;
+                }
+
+                const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+
+                if (remaining <= 0) {
+                    element.style.display = 'none';
+                    return;
+                }
+
+                element.textContent = template.replace(/\d+\s*s\b/i, `${remaining} s`);
+            });
+        };
+
+        tick();
+        const timer = window.setInterval(tick, 250);
+
+        const syncOnFocus = () => tick();
+        window.addEventListener('focus', syncOnFocus);
+        document.addEventListener('visibilitychange', syncOnFocus);
+
+        return () => {
+            window.clearInterval(timer);
+            window.removeEventListener('focus', syncOnFocus);
+            document.removeEventListener('visibilitychange', syncOnFocus);
+        };
+    }, []);
+
+    return null;
+}
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
@@ -64,6 +123,7 @@ createInertiaApp({
             <TooltipProvider delayDuration={0}>
                 {app}
                 <GameHomeNavButton />
+                <LiveGameTimers />
                 <Toaster />
             </TooltipProvider>
         );
