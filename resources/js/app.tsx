@@ -23,9 +23,9 @@ function GameHomeNavButton() {
     }
 
     const path = window.location.pathname;
-    const isGamePage = path === '/dashboard' || path.startsWith('/game/');
+    const isStandaloneGamePage = path.startsWith('/game/');
 
-    if (!isGamePage) {
+    if (!isStandaloneGamePage) {
         return null;
     }
 
