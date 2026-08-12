@@ -16,9 +16,9 @@ class CombatController extends Controller
     private const TICK_MS = 600;
 
     private const STYLE_DEFAULTS = [
-        'melee' => ['attack_ticks' => 4, 'max_hit' => 2],
+        'melee' => ['attack_ticks' => 5, 'max_hit' => 2],
         'ranged' => ['attack_ticks' => 3, 'max_hit' => 1],
-        'magic' => ['attack_ticks' => 5, 'max_hit' => 3],
+        'magic' => ['attack_ticks' => 7, 'max_hit' => 3],
     ];
 
     private const MONSTERS = [
