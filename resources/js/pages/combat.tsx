@@ -1,6 +1,27 @@
 import { Head, router } from '@inertiajs/react';
-import { Shield, Swords } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Swords } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+
+type XpAward = {
+    skill: string;
+    amount: number;
+};
+
+type CombatLogEntry = {
+    id: number;
+    actor: 'player' | 'monster';
+    damage: number;
+    hit: boolean;
+    xp: XpAward[];
+    atMs: number;
+};
+
+type LootItem = {
+    slug: string;
+    name: string;
+    quantity: number;
+    icon: string;
+};
 
 type FighterState = {
     hp: number;
@@ -15,15 +36,26 @@ type FighterState = {
 };
 
 type CombatState = {
-    status: 'active' | 'won' | 'lost' | 'fled';
+    status: 'ready' | 'active' | 'won' | 'lost' | 'fled';
     serverNowMs: number;
+    resultReadyAtMs: number | null;
     damageScale: number;
     style: 'melee' | 'ranged' | 'magic';
-    player: FighterState;
+    player: FighterState & {
+        name: string;
+        level: number;
+        mana: number;
+        maxMana: number;
+    };
     monster: FighterState & {
         slug: string;
         name: string;
         level: number;
+    };
+    combatLog: CombatLogEntry[];
+    loot: {
+        received: LootItem[];
+        lost: LootItem[];
     };
     lastEvent: string | null;
 };
@@ -38,9 +70,20 @@ export default function Combat({ combat: initialCombat }: Props) {
     const [serverOffsetMs, setServerOffsetMs] = useState(
         initialCombat ? initialCombat.serverNowMs - Date.now() : 0,
     );
+    const [attackPulse, setAttackPulse] = useState<'player' | 'monster' | null>(null);
+    const lastAnimatedLogId = useRef(
+        initialCombat?.combatLog.at(-1)?.id ?? 0,
+    );
 
     useEffect(() => {
-        const clock = window.setInterval(() => setNow(Date.now()), 100);
+        setCombat(initialCombat);
+        if (initialCombat) {
+            setServerOffsetMs(initialCombat.serverNowMs - Date.now());
+        }
+    }, [initialCombat]);
+
+    useEffect(() => {
+        const clock = window.setInterval(() => setNow(Date.now()), 50);
         return () => window.clearInterval(clock);
     }, []);
 
@@ -64,7 +107,7 @@ export default function Combat({ combat: initialCombat }: Props) {
             }
         };
 
-        const poller = window.setInterval(refresh, 350);
+        const poller = window.setInterval(refresh, 220);
         refresh();
 
         return () => {
@@ -73,9 +116,23 @@ export default function Combat({ combat: initialCombat }: Props) {
         };
     }, [combat?.status]);
 
+    useEffect(() => {
+        if (!combat || combat.combatLog.length === 0) return;
+
+        const latest = combat.combatLog.at(-1);
+        if (!latest || latest.id <= lastAnimatedLogId.current) return;
+
+        lastAnimatedLogId.current = latest.id;
+        setAttackPulse(latest.actor);
+
+        const timer = window.setTimeout(() => setAttackPulse(null), 320);
+        return () => window.clearTimeout(timer);
+    }, [combat?.combatLog]);
+
+    const serverNow = now + serverOffsetMs;
     const remaining = (endsAtMs: number | null) => {
         if (!endsAtMs) return 0;
-        return Math.max(0, endsAtMs - (now + serverOffsetMs));
+        return Math.max(0, endsAtMs - serverNow);
     };
 
     if (!combat) {
@@ -91,94 +148,231 @@ export default function Combat({ combat: initialCombat }: Props) {
         );
     }
 
+    const terminal = combat.status === 'won' || combat.status === 'lost';
+    const resultReady = terminal && (
+        combat.resultReadyAtMs === null || serverNow >= combat.resultReadyAtMs
+    );
+    const resultRemaining = terminal && combat.resultReadyAtMs
+        ? Math.max(0, combat.resultReadyAtMs - serverNow)
+        : 0;
+
+    if (resultReady) {
+        return (
+            <div className="game-shell combat-page">
+                <Head title={`Combat result · ${combat.monster.name} · RuneVentures`} />
+                <main className="combat-results-page">
+                    <section className={`combat-result-card ${combat.status}`}>
+                        <span>Combat result</span>
+                        <h1>{combat.status === 'won' ? 'Pergalė' : 'Pralaimėjimas'}</h1>
+                        <p>
+                            {combat.status === 'won'
+                                ? `${combat.monster.name} nugalėtas.`
+                                : `${combat.player.name} buvo nugalėtas.`}
+                        </p>
+                    </section>
+
+                    {combat.status === 'won' && (
+                        <section className="combat-loot-panel">
+                            <div className="combat-section-heading">
+                                <span>Drop</span>
+                                <small>Automatiškai pridėta į inventorių</small>
+                            </div>
+
+                            <div className="combat-loot-list">
+                                {combat.loot.received.length === 0 && (
+                                    <div className="combat-loot-empty">Nieko neiškrito.</div>
+                                )}
+
+                                {combat.loot.received.map((item, index) => (
+                                    <div className="combat-loot-row" key={`${item.slug}-${index}`}>
+                                        <strong>{item.name}</strong>
+                                        <b>×{item.quantity}</b>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {combat.loot.lost.length > 0 && (
+                                <div className="combat-loot-lost">
+                                    Inventoriuje netilpo: {combat.loot.lost.map((item) => `${item.name} ×${item.quantity}`).join(', ')}
+                                </div>
+                            )}
+                        </section>
+                    )}
+
+                    <button className="combat-result-return" type="button" onClick={() => router.visit('/main')}>
+                        Grįžti į World
+                    </button>
+                </main>
+            </div>
+        );
+    }
+
     const playerRemaining = remaining(combat.player.nextAttackAtMs);
     const monsterRemaining = remaining(combat.monster.nextAttackAtMs);
-    const playerCycle = combat.player.attackIntervalMs;
-    const monsterCycle = combat.monster.attackIntervalMs;
-    const playerProgress = playerCycle > 0
-        ? Math.max(0, Math.min(100, 100 - (playerRemaining / playerCycle) * 100))
-        : 100;
-    const monsterProgress = monsterCycle > 0
-        ? Math.max(0, Math.min(100, 100 - (monsterRemaining / monsterCycle) * 100))
-        : 100;
+    const playerProgress = combat.status === 'active' && combat.player.attackIntervalMs > 0
+        ? Math.max(0, Math.min(100, 100 - (playerRemaining / combat.player.attackIntervalMs) * 100))
+        : 0;
+    const monsterProgress = combat.status === 'active' && combat.monster.attackIntervalMs > 0
+        ? Math.max(0, Math.min(100, 100 - (monsterRemaining / combat.monster.attackIntervalMs) * 100))
+        : 0;
 
     return (
         <div className="game-shell combat-page">
             <Head title={`${combat.monster.name} · Combat · RuneVentures`} />
 
             <main>
-                <section className="combat-arena">
-                    <div className="combat-fighter player">
-                        <span className="combat-fighter-label">Tu</span>
-                        <strong>{combat.style.toUpperCase()}</strong>
-                        <div className="combat-hp-line">
-                            <span>HP</span>
-                            <b>{combat.player.hp}/{combat.player.maxHp}</b>
+                <section className={`combat-duel${terminal ? ' ending' : ''}`}>
+                    <article className={`duel-side player-side${combat.status === 'lost' ? ' dead' : ''}`}>
+                        <div className="duel-identity">
+                            <strong>{combat.player.name}</strong>
+                            <span>Level {combat.player.level}</span>
                         </div>
-                        <div className="combat-hp-bar"><i style={{ width: `${(combat.player.hp / Math.max(1, combat.player.maxHp)) * 100}%` }} /></div>
+
+                        <CombatBar label="HP" value={combat.player.hp} max={combat.player.maxHp} kind="hp" />
+                        <CombatBar label="MP" value={combat.player.mana} max={combat.player.maxMana} kind="mana" />
+
+                        <AttackOrb
+                            side="player"
+                            progress={playerProgress}
+                            remaining={playerRemaining}
+                            interval={combat.player.attackIntervalMs}
+                            firing={attackPulse === 'player'}
+                            active={combat.status === 'active'}
+                        />
+                    </article>
+
+                    <div className="duel-divider"><Swords size={19} /></div>
+
+                    <article className={`duel-side monster-side${combat.status === 'won' ? ' dead' : ''}`}>
+                        <div className="duel-identity">
+                            <strong>{combat.monster.name}</strong>
+                            <span>Level {combat.monster.level}</span>
+                        </div>
+
+                        <CombatBar label="HP" value={combat.monster.hp} max={combat.monster.maxHp} kind="hp" />
+
+                        <AttackOrb
+                            side="monster"
+                            progress={monsterProgress}
+                            remaining={monsterRemaining}
+                            interval={combat.monster.attackIntervalMs}
+                            firing={attackPulse === 'monster'}
+                            active={combat.status === 'active'}
+                        />
+                    </article>
+                </section>
+
+                {combat.status === 'ready' && (
+                    <button
+                        className="combat-hit-start"
+                        type="button"
+                        onClick={() => router.post('/game/combat/hit')}
+                    >
+                        Hit
+                    </button>
+                )}
+
+                {terminal && (
+                    <div className="combat-death-cooldown">
+                        <strong>{combat.status === 'won' ? `${combat.monster.name} mirė` : `${combat.player.name} mirė`}</strong>
+                        <span>Rezultatai po {(resultRemaining / 1000).toFixed(1)} s</span>
+                    </div>
+                )}
+
+                <section className="combat-log-panel">
+                    <div className="combat-section-heading">
+                        <span>Combat log</span>
+                        <small>{combat.combatLog.length} įrašai</small>
                     </div>
 
-                    <div className="combat-versus"><Swords size={24} /></div>
+                    <div className="combat-log-list">
+                        {combat.combatLog.length === 0 && (
+                            <div className="combat-log-empty">
+                                {combat.status === 'ready' ? 'Paspausk Hit, kad prasidėtų automatinė kova.' : 'Laukiama pirmo smūgio...'}
+                            </div>
+                        )}
 
-                    <div className="combat-fighter monster">
-                        <span className="combat-fighter-label">Monster</span>
-                        <strong>{combat.monster.name}</strong>
-                        <small>Combat {combat.monster.level}</small>
-                        <div className="combat-hp-line">
-                            <span>HP</span>
-                            <b>{combat.monster.hp}/{combat.monster.maxHp}</b>
-                        </div>
-                        <div className="combat-hp-bar"><i style={{ width: `${(combat.monster.hp / Math.max(1, combat.monster.maxHp)) * 100}%` }} /></div>
+                        {[...combat.combatLog].reverse().map((entry) => (
+                            <div className={`combat-log-row ${entry.actor}`} key={entry.id}>
+                                <div>
+                                    <strong>{entry.actor === 'player' ? combat.player.name : combat.monster.name}</strong>
+                                    <span>{entry.hit ? `${entry.damage} damage` : 'Miss'}</span>
+                                </div>
+                                {entry.xp.length > 0 && (
+                                    <small>{entry.xp.map((award) => `+${award.amount} ${capitalize(award.skill)} XP`).join(' · ')}</small>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </section>
 
-                {combat.status === 'active' && (
-                    <section className="combat-timers">
-                        <div className="combat-timer-card">
-                            <div className="combat-timer-heading">
-                                <Swords size={18} />
-                                <div>
-                                    <span>Tavo smūgis</span>
-                                    <strong>{(playerRemaining / 1000).toFixed(1)} s</strong>
-                                </div>
-                                <small>{combat.player.attackSeconds.toFixed(2)} s rate</small>
-                            </div>
-                            <div className="combat-timer-bar"><i style={{ width: `${playerProgress}%` }} /></div>
-                            <p>
-                                Max hit {combat.player.maxHit} · Hit {(combat.player.hitChance * 100).toFixed(1)}% · Atk roll {combat.player.attackRoll} · Def roll {combat.player.defenceRoll}
-                            </p>
-                        </div>
-
-                        <div className="combat-timer-card monster-timer">
-                            <div className="combat-timer-heading">
-                                <Shield size={18} />
-                                <div>
-                                    <span>Monstro smūgis</span>
-                                    <strong>{(monsterRemaining / 1000).toFixed(1)} s</strong>
-                                </div>
-                                <small>{combat.monster.attackSeconds.toFixed(2)} s rate</small>
-                            </div>
-                            <div className="combat-timer-bar"><i style={{ width: `${monsterProgress}%` }} /></div>
-                            <p>
-                                Max hit {combat.monster.maxHit} · Hit {(combat.monster.hitChance * 100).toFixed(1)}% · Atk roll {combat.monster.attackRoll} · Def roll {combat.monster.defenceRoll}
-                            </p>
-                        </div>
-                    </section>
-                )}
-
-                {combat.lastEvent && <div className="combat-event">{combat.lastEvent}</div>}
-
-                {combat.status !== 'active' && (
-                    <div className={`combat-result ${combat.status}`}>
-                        <strong>{combat.status === 'won' ? 'Pergalė' : combat.status === 'lost' ? 'Pralaimėjimas' : 'Kova nutraukta'}</strong>
-                        <button type="button" onClick={() => router.visit('/main')}>Grįžti į World</button>
-                    </div>
-                )}
-
-                {combat.status === 'active' && (
-                    <button className="combat-leave" type="button" onClick={() => router.post('/game/combat/leave')}>Pasitraukti iš kovos</button>
+                {(combat.status === 'ready' || combat.status === 'active') && (
+                    <button className="combat-leave" type="button" onClick={() => router.post('/game/combat/leave')}>
+                        Pasitraukti iš kovos
+                    </button>
                 )}
             </main>
         </div>
     );
+}
+
+function CombatBar({
+    label,
+    value,
+    max,
+    kind,
+}: {
+    label: string;
+    value: number;
+    max: number;
+    kind: 'hp' | 'mana';
+}) {
+    const progress = Math.max(0, Math.min(100, (value / Math.max(1, max)) * 100));
+
+    return (
+        <div className={`duel-vital ${kind}`}>
+            <div className="duel-vital-line">
+                <span>{label}</span>
+                <b>{value}/{max}</b>
+            </div>
+            <div className="duel-vital-bar"><i style={{ width: `${progress}%` }} /></div>
+        </div>
+    );
+}
+
+function AttackOrb({
+    side,
+    progress,
+    remaining,
+    interval,
+    firing,
+    active,
+}: {
+    side: 'player' | 'monster';
+    progress: number;
+    remaining: number;
+    interval: number;
+    firing: boolean;
+    active: boolean;
+}) {
+    const angle = progress * 3.6;
+
+    return (
+        <div className={`attack-orb-wrap ${side}`}>
+            <div
+                className={`attack-orb ${side}${firing ? ' firing' : ''}${active ? ' active' : ''}`}
+                style={{
+                    background: `conic-gradient(#b88a67 ${angle}deg, #252226 ${angle}deg 360deg)`,
+                }}
+            >
+                <i />
+            </div>
+            <span>{active ? `${(remaining / 1000).toFixed(1)} s` : 'Ready'}</span>
+            <small>{(interval / 1000).toFixed(1)} s rate</small>
+        </div>
+    );
+}
+
+function capitalize(value: string) {
+    return value.charAt(0).toUpperCase() + value.slice(1);
 }
