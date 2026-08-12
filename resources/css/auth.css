@@ -1,0 +1,274 @@
+.rune-auth-shell {
+    position: relative;
+    min-height: 100svh;
+    overflow: hidden;
+    color: #eee2c8;
+    background:
+        radial-gradient(circle at 50% -10%, rgba(171, 124, 52, 0.18), transparent 36rem),
+        radial-gradient(circle at 15% 70%, rgba(95, 57, 26, 0.14), transparent 28rem),
+        linear-gradient(180deg, #0b0a08 0%, #12100c 48%, #090807 100%);
+}
+
+.rune-auth-shell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.2;
+    background-image:
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 48px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.014) 0 1px, transparent 1px 48px);
+}
+
+.rune-auth-haze {
+    position: absolute;
+    left: 50%;
+    top: 8rem;
+    width: 34rem;
+    height: 34rem;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: rgba(176, 126, 54, 0.06);
+    filter: blur(70px);
+    pointer-events: none;
+}
+
+.rune-auth-wrap {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 100svh;
+    width: 100%;
+    max-width: 30rem;
+    margin: 0 auto;
+    padding: 2rem 1rem max(2rem, env(safe-area-inset-bottom));
+    flex-direction: column;
+    justify-content: center;
+}
+
+.rune-auth-brand {
+    display: flex;
+    margin: 0 auto 1.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    text-decoration: none;
+}
+
+.rune-auth-crest {
+    position: relative;
+    display: grid;
+    width: 3.4rem;
+    height: 3.4rem;
+    place-items: center;
+    border: 1px solid #795d31;
+    background: linear-gradient(145deg, #241d13, #100d09);
+    box-shadow: inset 0 0 0 2px #0b0907, 0 7px 22px rgba(0,0,0,.4);
+    transform: rotate(45deg);
+}
+
+.rune-auth-crest svg {
+    position: absolute;
+    transform: rotate(-45deg);
+}
+
+.rune-auth-shield {
+    width: 2rem;
+    height: 2rem;
+    color: #b99450;
+    stroke-width: 1.5;
+}
+
+.rune-auth-swords {
+    width: 1.1rem;
+    height: 1.1rem;
+    color: #e6d3a2;
+    stroke-width: 1.6;
+}
+
+.rune-auth-name {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: .085em;
+    color: #e2c17d;
+    text-transform: uppercase;
+    text-shadow: 0 2px 0 #000;
+}
+
+.rune-auth-tagline {
+    margin-top: .1rem;
+    font-size: .68rem;
+    letter-spacing: .15em;
+    color: #82745d;
+    text-transform: uppercase;
+}
+
+.rune-auth-panel {
+    position: relative;
+    border: 1px solid #5a462a;
+    background:
+        linear-gradient(180deg, rgba(42, 33, 22, .96), rgba(22, 18, 13, .98));
+    box-shadow:
+        inset 0 0 0 1px rgba(215, 177, 102, .07),
+        inset 0 18px 34px rgba(255, 216, 138, .018),
+        0 18px 55px rgba(0,0,0,.55);
+    padding: 1.5rem 1.2rem 1.35rem;
+}
+
+.rune-auth-panel::before,
+.rune-auth-panel::after {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #8a6937, transparent);
+    opacity: .55;
+}
+
+.rune-auth-panel::before { top: .45rem; }
+.rune-auth-panel::after { bottom: .45rem; }
+
+.rune-auth-corner {
+    position: absolute;
+    width: .7rem;
+    height: .7rem;
+    border-color: #b18a48;
+    opacity: .9;
+}
+
+.rune-auth-corner-tl { left: .35rem; top: .35rem; border-left: 1px solid; border-top: 1px solid; }
+.rune-auth-corner-tr { right: .35rem; top: .35rem; border-right: 1px solid; border-top: 1px solid; }
+.rune-auth-corner-bl { left: .35rem; bottom: .35rem; border-left: 1px solid; border-bottom: 1px solid; }
+.rune-auth-corner-br { right: .35rem; bottom: .35rem; border-right: 1px solid; border-bottom: 1px solid; }
+
+.rune-auth-heading {
+    margin-bottom: 1.45rem;
+    text-align: center;
+}
+
+.rune-auth-kicker {
+    margin-bottom: .45rem;
+    color: #95743e;
+    font-size: .64rem;
+    font-weight: 700;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+}
+
+.rune-auth-heading h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #f0dfb8;
+    font-size: 1.55rem;
+    line-height: 1.2;
+    font-weight: 600;
+}
+
+.rune-auth-heading > p:last-child:not(.rune-auth-kicker) {
+    margin: .5rem auto 0;
+    max-width: 22rem;
+    color: #9d917c;
+    font-size: .83rem;
+    line-height: 1.45;
+}
+
+.rune-auth-content {
+    color: #d8ccb4;
+}
+
+.rune-auth-content .text-muted-foreground,
+.rune-auth-content [class*='text-muted-foreground'] {
+    color: #918573 !important;
+}
+
+.rune-auth-content label {
+    color: #d9c9a8;
+    font-size: .82rem;
+    font-weight: 600;
+}
+
+.rune-auth-content input:not([type='checkbox']):not([type='hidden']),
+.rune-auth-content textarea,
+.rune-auth-content select {
+    min-height: 2.8rem;
+    border-color: #57452c !important;
+    border-radius: .2rem !important;
+    background: #0f0d0a !important;
+    color: #efe5d1 !important;
+    box-shadow: inset 0 1px 5px rgba(0,0,0,.65) !important;
+}
+
+.rune-auth-content input::placeholder,
+.rune-auth-content textarea::placeholder {
+    color: #6e6659 !important;
+}
+
+.rune-auth-content input:focus,
+.rune-auth-content textarea:focus,
+.rune-auth-content select:focus {
+    border-color: #a27d3f !important;
+    box-shadow: 0 0 0 2px rgba(162, 125, 63, .15), inset 0 1px 5px rgba(0,0,0,.65) !important;
+}
+
+.rune-auth-content button:not([role='checkbox']) {
+    min-height: 2.75rem;
+    border: 1px solid #98733c !important;
+    border-radius: .2rem !important;
+    background: linear-gradient(180deg, #98733c 0%, #725329 100%) !important;
+    color: #fff0cd !important;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 700;
+    letter-spacing: .04em;
+    box-shadow: inset 0 1px 0 rgba(255,238,192,.18), 0 3px 0 #392716 !important;
+    text-shadow: 0 1px 1px #36240f;
+}
+
+.rune-auth-content button:not([role='checkbox']):hover {
+    background: linear-gradient(180deg, #aa8448 0%, #7e5c2d 100%) !important;
+}
+
+.rune-auth-content button:not([role='checkbox']):disabled {
+    opacity: .58;
+}
+
+.rune-auth-content [role='checkbox'] {
+    border-color: #725936 !important;
+    border-radius: .12rem !important;
+    background: #100d0a !important;
+}
+
+.rune-auth-content [role='checkbox'][data-state='checked'] {
+    background: #8b6937 !important;
+    color: #fff0cf !important;
+}
+
+.rune-auth-content a {
+    color: #d4ad62 !important;
+    text-decoration-color: #765b31 !important;
+}
+
+.rune-auth-content a:hover {
+    color: #efd18d !important;
+}
+
+.rune-auth-content [data-slot='separator'],
+.rune-auth-content hr {
+    border-color: #3f3425 !important;
+    background-color: #3f3425 !important;
+}
+
+.rune-auth-footer {
+    margin-top: 1rem;
+    text-align: center;
+    color: #5f574a;
+    font-size: .62rem;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+}
+
+@media (min-width: 640px) {
+    .rune-auth-panel {
+        padding: 1.8rem 1.8rem 1.65rem;
+    }
+}
