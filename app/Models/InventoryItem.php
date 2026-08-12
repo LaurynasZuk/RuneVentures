@@ -11,6 +11,14 @@ class InventoryItem extends Model
 
     protected $fillable = ['player_id', 'slot', 'item_id', 'quantity'];
 
+    protected function casts(): array
+    {
+        return [
+            'slot' => 'integer',
+            'quantity' => 'integer',
+        ];
+    }
+
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
