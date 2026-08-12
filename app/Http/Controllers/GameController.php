@@ -332,65 +332,61 @@ class GameController extends Controller
 
     private function ensureWorld(): Location
     {
-        $lumbridge = Location::updateOrCreate(
+        $coldbreezePort = Location::updateOrCreate(
             ['slug' => 'starter-village'],
             [
-                'name' => 'Lumbridge',
-                'description' => 'Pagrindinė pradinė vietovė ir kelių sankirta.',
-                'region' => 'Central lands',
+                'name' => 'Coldbreeze Port',
+                'description' => 'Vėjuotas pajūrio uostas, kuriame prasideda kelionė.',
+                'region' => 'Coldbreeze Coast',
             ],
         );
 
-        $eastPort = Location::updateOrCreate(
+        $eastBeach = Location::updateOrCreate(
             ['slug' => 'port'],
             [
-                'name' => 'East Port',
-                'description' => 'Rytinis uostas prie pakrantės prekybos kelio.',
-                'region' => 'Eastern coast',
+                'name' => 'East Beach',
+                'description' => 'Smėlėtas rytinis paplūdimys už Coldbreeze Port.',
+                'region' => 'Eastern Shore',
             ],
         );
 
-        $northEastPlains = Location::updateOrCreate(
+        $mistvaleVillage = Location::updateOrCreate(
             ['slug' => 'north-east-plains'],
             [
-                'name' => 'North East Plains',
-                'description' => 'Atviros lygumos į šiaurės rytus nuo Lumbridge.',
-                'region' => 'North eastern lands',
+                'name' => 'Mistvale Village',
+                'description' => 'Rūke paskendęs kaimas į šiaurę nuo Coldbreeze Port.',
+                'region' => 'Mistvale',
             ],
         );
 
-        $southWestSwamp = Location::updateOrCreate(
+        $westPlains = Location::updateOrCreate(
             ['slug' => 'south-west-swamp'],
             [
-                'name' => 'South West Swamp',
-                'description' => 'Drėgna pelkė pietvakarių keliuose.',
-                'region' => 'South western lands',
+                'name' => 'West Plains',
+                'description' => 'Atviros vakarinės lygumos už Coldbreeze Port.',
+                'region' => 'Western Fields',
             ],
         );
 
-        $lumbridge->destinations()->sync([
-            $eastPort->id => ['label' => $eastPort->name, 'travel_seconds' => 5],
-            $northEastPlains->id => ['label' => $northEastPlains->name, 'travel_seconds' => 6],
-            $southWestSwamp->id => ['label' => $southWestSwamp->name, 'travel_seconds' => 5],
+        $coldbreezePort->destinations()->sync([
+            $eastBeach->id => ['label' => $eastBeach->name, 'travel_seconds' => 5],
+            $westPlains->id => ['label' => $westPlains->name, 'travel_seconds' => 5],
+            $mistvaleVillage->id => ['label' => $mistvaleVillage->name, 'travel_seconds' => 6],
         ]);
 
-        $eastPort->destinations()->sync([
-            $lumbridge->id => ['label' => $lumbridge->name, 'travel_seconds' => 5],
-            $northEastPlains->id => ['label' => $northEastPlains->name, 'travel_seconds' => 4],
+        $eastBeach->destinations()->sync([
+            $coldbreezePort->id => ['label' => $coldbreezePort->name, 'travel_seconds' => 5],
         ]);
 
-        $northEastPlains->destinations()->sync([
-            $lumbridge->id => ['label' => $lumbridge->name, 'travel_seconds' => 6],
-            $eastPort->id => ['label' => $eastPort->name, 'travel_seconds' => 4],
-            $southWestSwamp->id => ['label' => $southWestSwamp->name, 'travel_seconds' => 7],
+        $westPlains->destinations()->sync([
+            $coldbreezePort->id => ['label' => $coldbreezePort->name, 'travel_seconds' => 5],
         ]);
 
-        $southWestSwamp->destinations()->sync([
-            $lumbridge->id => ['label' => $lumbridge->name, 'travel_seconds' => 5],
-            $northEastPlains->id => ['label' => $northEastPlains->name, 'travel_seconds' => 7],
+        $mistvaleVillage->destinations()->sync([
+            $coldbreezePort->id => ['label' => $coldbreezePort->name, 'travel_seconds' => 6],
         ]);
 
-        return $lumbridge;
+        return $coldbreezePort;
     }
 
     private function worldMap(): array
@@ -402,16 +398,16 @@ class GameController extends Controller
             'south-west-swamp',
         ])->get()->keyBy('slug');
 
-        $lumbridge = $locations->get('starter-village');
-        $eastPort = $locations->get('port');
-        $northEastPlains = $locations->get('north-east-plains');
-        $southWestSwamp = $locations->get('south-west-swamp');
+        $coldbreezePort = $locations->get('starter-village');
+        $eastBeach = $locations->get('port');
+        $mistvaleVillage = $locations->get('north-east-plains');
+        $westPlains = $locations->get('south-west-swamp');
 
         $nodes = [
-            ['id' => $lumbridge->id, 'name' => $lumbridge->name, 'x' => 170, 'y' => 155],
-            ['id' => $eastPort->id, 'name' => $eastPort->name, 'x' => 525, 'y' => 155],
-            ['id' => $northEastPlains->id, 'name' => $northEastPlains->name, 'x' => 425, 'y' => 345],
-            ['id' => $southWestSwamp->id, 'name' => $southWestSwamp->name, 'x' => 165, 'y' => 515],
+            ['id' => $coldbreezePort->id, 'name' => $coldbreezePort->name, 'x' => 350, 'y' => 330],
+            ['id' => $eastBeach->id, 'name' => $eastBeach->name, 'x' => 560, 'y' => 330],
+            ['id' => $westPlains->id, 'name' => $westPlains->name, 'x' => 140, 'y' => 330],
+            ['id' => $mistvaleVillage->id, 'name' => $mistvaleVillage->name, 'x' => 350, 'y' => 120],
         ];
 
         $ids = collect($nodes)->pluck('id')->all();
