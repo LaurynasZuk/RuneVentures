@@ -103,14 +103,7 @@ class GameController extends Controller
 
     private function player(Request $request): Player
     {
-        $start = Location::firstOrCreate(
-            ['slug' => 'starter-village'],
-            [
-                'name' => 'Aldor Village',
-                'description' => 'A quiet frontier settlement where every adventure begins.',
-                'region' => 'Greenreach',
-            ],
-        );
+        $start = $this->ensureWorld();
 
         $player = Player::firstOrCreate(
             ['user_id' => $request->user()->id],
@@ -120,11 +113,41 @@ class GameController extends Controller
         foreach (['attack', 'strength', 'defence', 'hitpoints', 'ranged', 'magic', 'prayer', 'woodcutting', 'mining', 'fishing', 'cooking'] as $skill) {
             PlayerSkill::firstOrCreate(
                 ['player_id' => $player->id, 'skill' => $skill],
-                ['xp' => $skill === 'hitpoints' ? 900 : 0],
+                ['xp' => 0],
             );
         }
 
         return $player;
+    }
+
+    private function ensureWorld(): Location
+    {
+        $village = Location::firstOrCreate(
+            ['slug' => 'starter-village'],
+            [
+                'name' => 'Aldor Village',
+                'description' => 'A quiet frontier settlement where every adventure begins.',
+                'region' => 'Greenreach',
+            ],
+        );
+
+        $woods = Location::firstOrCreate(
+            ['slug' => 'whispering-woods'],
+            [
+                'name' => 'Whispering Woods',
+                'description' => 'Silver leaves whisper old secrets beneath a dim green canopy.',
+                'region' => 'Greenreach',
+            ],
+        );
+
+        $village->destinations()->syncWithoutDetaching([
+            $woods->id => ['label' => 'Whispering Woods', 'travel_seconds' => 4],
+        ]);
+        $woods->destinations()->syncWithoutDetaching([
+            $village->id => ['label' => 'Aldor Village', 'travel_seconds' => 4],
+        ]);
+
+        return $village;
     }
 
     private function grantXp(Player $player, string $skill, int $amount): void
