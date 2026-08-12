@@ -79,14 +79,6 @@ function WorldMapControls() {
             y: Number.parseFloat(canvas.dataset.mapOffsetY ?? '0') || 0,
         });
 
-        const clampAxis = (value: number, min: number, max: number) => {
-            if (min > max) {
-                return (min + max) / 2;
-            }
-
-            return Math.min(max, Math.max(min, value));
-        };
-
         const clampOffset = (
             viewport: HTMLElement,
             canvas: HTMLElement,
@@ -101,18 +93,39 @@ function WorldMapControls() {
             }
 
             const scale = getScale(canvas);
-            const xs = nodes.map((node) => node.offsetLeft * scale);
-            const ys = nodes.map((node) => node.offsetTop * scale);
             const guard = Math.min(44, viewport.clientWidth * 0.14, viewport.clientHeight * 0.18);
-            const minX = guard - Math.max(...xs);
-            const maxX = viewport.clientWidth - guard - Math.min(...xs);
-            const minY = guard - Math.max(...ys);
-            const maxY = viewport.clientHeight - guard - Math.min(...ys);
+            const left = guard;
+            const right = viewport.clientWidth - guard;
+            const top = guard;
+            const bottom = viewport.clientHeight - guard;
+            let nearestCorrection: MapOffset | null = null;
+            let nearestDistance = Number.POSITIVE_INFINITY;
 
-            return {
-                x: clampAxis(offset.x, minX, maxX),
-                y: clampAxis(offset.y, minY, maxY),
-            };
+            for (const node of nodes) {
+                const x = offset.x + (node.offsetLeft * scale);
+                const y = offset.y + (node.offsetTop * scale);
+                const visibleX = Math.min(right, Math.max(left, x));
+                const visibleY = Math.min(bottom, Math.max(top, y));
+                const correctionX = visibleX - x;
+                const correctionY = visibleY - y;
+                const distance = (correctionX ** 2) + (correctionY ** 2);
+
+                if (distance === 0) {
+                    return offset;
+                }
+
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearestCorrection = { x: correctionX, y: correctionY };
+                }
+            }
+
+            return nearestCorrection
+                ? {
+                    x: offset.x + nearestCorrection.x,
+                    y: offset.y + nearestCorrection.y,
+                }
+                : offset;
         };
 
         const applyOffset = (canvas: HTMLElement, offset: MapOffset) => {
