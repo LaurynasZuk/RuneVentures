@@ -45,6 +45,225 @@ function GameHomeNavButton() {
     );
 }
 
+function WorldMapControls() {
+    useEffect(() => {
+        type MapOffset = { x: number; y: number };
+        type DragState = {
+            pointerId: number;
+            viewport: HTMLElement;
+            canvas: HTMLElement;
+            startX: number;
+            startY: number;
+            offsetX: number;
+            offsetY: number;
+        };
+
+        let drag: DragState | null = null;
+        let activeViewport: HTMLElement | null = null;
+        let activeCurrentNode: HTMLElement | null = null;
+        let syncFrame = 0;
+
+        const getCanvas = (viewport: HTMLElement) =>
+            viewport.querySelector<HTMLElement>('.world-map-canvas');
+
+        const getScale = (canvas: HTMLElement) => {
+            const value = Number.parseFloat(
+                getComputedStyle(canvas).getPropertyValue('--world-map-scale'),
+            );
+
+            return Number.isFinite(value) && value > 0 ? value : 0.57;
+        };
+
+        const getOffset = (canvas: HTMLElement): MapOffset => ({
+            x: Number.parseFloat(canvas.dataset.mapOffsetX ?? '0') || 0,
+            y: Number.parseFloat(canvas.dataset.mapOffsetY ?? '0') || 0,
+        });
+
+        const clampAxis = (value: number, min: number, max: number) => {
+            if (min > max) {
+                return (min + max) / 2;
+            }
+
+            return Math.min(max, Math.max(min, value));
+        };
+
+        const clampOffset = (
+            viewport: HTMLElement,
+            canvas: HTMLElement,
+            offset: MapOffset,
+        ): MapOffset => {
+            const nodes = Array.from(
+                canvas.querySelectorAll<HTMLElement>('.world-map-node'),
+            );
+
+            if (nodes.length === 0) {
+                return offset;
+            }
+
+            const scale = getScale(canvas);
+            const xs = nodes.map((node) => node.offsetLeft * scale);
+            const ys = nodes.map((node) => node.offsetTop * scale);
+            const guard = Math.min(44, viewport.clientWidth * 0.14, viewport.clientHeight * 0.18);
+            const minX = guard - Math.max(...xs);
+            const maxX = viewport.clientWidth - guard - Math.min(...xs);
+            const minY = guard - Math.max(...ys);
+            const maxY = viewport.clientHeight - guard - Math.min(...ys);
+
+            return {
+                x: clampAxis(offset.x, minX, maxX),
+                y: clampAxis(offset.y, minY, maxY),
+            };
+        };
+
+        const applyOffset = (canvas: HTMLElement, offset: MapOffset) => {
+            canvas.dataset.mapOffsetX = String(offset.x);
+            canvas.dataset.mapOffsetY = String(offset.y);
+            canvas.style.setProperty('--map-offset-x', `${offset.x}px`);
+            canvas.style.setProperty('--map-offset-y', `${offset.y}px`);
+        };
+
+        const centerOnCurrentLocation = (viewport: HTMLElement, force = false) => {
+            const canvas = getCanvas(viewport);
+            const currentNode = canvas?.querySelector<HTMLElement>('.world-map-node.current') ?? null;
+
+            if (!canvas || !currentNode) {
+                return;
+            }
+
+            if (!force && activeViewport === viewport && activeCurrentNode === currentNode) {
+                return;
+            }
+
+            activeViewport = viewport;
+            activeCurrentNode = currentNode;
+
+            const scale = getScale(canvas);
+            const centered = {
+                x: (viewport.clientWidth / 2) - (currentNode.offsetLeft * scale),
+                y: (viewport.clientHeight / 2) - (currentNode.offsetTop * scale),
+            };
+
+            applyOffset(canvas, clampOffset(viewport, canvas, centered));
+        };
+
+        const syncMap = () => {
+            syncFrame = 0;
+            const viewport = document.querySelector<HTMLElement>('.world-map-viewport');
+
+            if (!viewport) {
+                activeViewport = null;
+                activeCurrentNode = null;
+                return;
+            }
+
+            centerOnCurrentLocation(viewport);
+        };
+
+        const scheduleSync = () => {
+            if (syncFrame) {
+                return;
+            }
+
+            syncFrame = window.requestAnimationFrame(syncMap);
+        };
+
+        const onPointerDown = (event: PointerEvent) => {
+            const target = event.target instanceof Element ? event.target : null;
+            const viewport = target?.closest<HTMLElement>('.world-map-viewport') ?? null;
+
+            if (!viewport || target?.closest('.world-map-node')) {
+                return;
+            }
+
+            const canvas = getCanvas(viewport);
+            if (!canvas) {
+                return;
+            }
+
+            const offset = getOffset(canvas);
+            drag = {
+                pointerId: event.pointerId,
+                viewport,
+                canvas,
+                startX: event.clientX,
+                startY: event.clientY,
+                offsetX: offset.x,
+                offsetY: offset.y,
+            };
+
+            viewport.setPointerCapture?.(event.pointerId);
+            event.preventDefault();
+            event.stopPropagation();
+        };
+
+        const onPointerMove = (event: PointerEvent) => {
+            if (!drag || drag.pointerId !== event.pointerId) {
+                return;
+            }
+
+            const next = clampOffset(drag.viewport, drag.canvas, {
+                x: drag.offsetX + event.clientX - drag.startX,
+                y: drag.offsetY + event.clientY - drag.startY,
+            });
+
+            applyOffset(drag.canvas, next);
+            event.preventDefault();
+            event.stopPropagation();
+        };
+
+        const finishDrag = (event: PointerEvent) => {
+            if (!drag || drag.pointerId !== event.pointerId) {
+                return;
+            }
+
+            if (drag.viewport.hasPointerCapture?.(event.pointerId)) {
+                drag.viewport.releasePointerCapture(event.pointerId);
+            }
+
+            drag = null;
+            event.preventDefault();
+            event.stopPropagation();
+        };
+
+        const onResize = () => {
+            if (activeViewport?.isConnected) {
+                centerOnCurrentLocation(activeViewport, true);
+            } else {
+                scheduleSync();
+            }
+        };
+
+        const observer = new MutationObserver(scheduleSync);
+        observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+
+        window.addEventListener('pointerdown', onPointerDown, { capture: true, passive: false });
+        window.addEventListener('pointermove', onPointerMove, { capture: true, passive: false });
+        window.addEventListener('pointerup', finishDrag, { capture: true, passive: false });
+        window.addEventListener('pointercancel', finishDrag, { capture: true, passive: false });
+        window.addEventListener('resize', onResize);
+        scheduleSync();
+
+        return () => {
+            observer.disconnect();
+            if (syncFrame) {
+                window.cancelAnimationFrame(syncFrame);
+            }
+            window.removeEventListener('pointerdown', onPointerDown, true);
+            window.removeEventListener('pointermove', onPointerMove, true);
+            window.removeEventListener('pointerup', finishDrag, true);
+            window.removeEventListener('pointercancel', finishDrag, true);
+            window.removeEventListener('resize', onResize);
+        };
+    }, []);
+
+    return null;
+}
+
 function LiveGameTimers() {
     useEffect(() => {
         const deadlines = new WeakMap<HTMLElement, number>();
@@ -126,6 +345,7 @@ createInertiaApp({
             <TooltipProvider delayDuration={0}>
                 {app}
                 <GameHomeNavButton />
+                <WorldMapControls />
                 <LiveGameTimers />
                 <Toaster />
             </TooltipProvider>
