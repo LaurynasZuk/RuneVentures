@@ -1,0 +1,45 @@
+@layer components {
+    .game-shell .inventory-grid-25 .item-slot.filled[data-equipment-action],
+    .game-shell .equipment-grid .equipment-slot.equipped[data-equipment-action] {
+        cursor: pointer;
+        transition: border-color .14s ease, background .14s ease, transform .08s ease;
+    }
+
+    .game-shell .inventory-grid-25 .item-slot.filled[data-equipment-action]:hover,
+    .game-shell .equipment-grid .equipment-slot.equipped[data-equipment-action]:hover {
+        border-color: #9a7a65;
+    }
+
+    .game-shell .inventory-grid-25 .item-slot.filled[data-equipment-action]:active,
+    .game-shell .equipment-grid .equipment-slot.equipped[data-equipment-action]:active {
+        transform: translateY(1px);
+    }
+
+    .game-shell .inventory-grid-25 .item-slot.filled[data-equipment-action]:focus-visible,
+    .game-shell .equipment-grid .equipment-slot.equipped[data-equipment-action]:focus-visible {
+        outline: 1px solid #a98267;
+        outline-offset: 2px;
+    }
+
+    .game-shell .equipment-grid .slot-weapon,
+    .game-shell .equipment-grid .slot-shield,
+    .game-shell .equipment-grid .slot-ammo {
+        border-color: #74675e;
+    }
+
+    .game-shell .equipment-grid .slot-weapon::after,
+    .game-shell .equipment-grid .slot-shield::after,
+    .game-shell .equipment-grid .slot-ammo::after {
+        display: block;
+        margin-top: .08rem;
+        color: #766f69;
+        font-size: .45rem;
+        line-height: 1;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .game-shell .equipment-grid .slot-weapon::after { content: '1H / 2H'; }
+    .game-shell .equipment-grid .slot-shield::after { content: 'Off-hand'; }
+    .game-shell .equipment-grid .slot-ammo::after { content: 'Ammo'; }
+}
