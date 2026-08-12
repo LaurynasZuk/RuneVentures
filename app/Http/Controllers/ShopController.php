@@ -70,10 +70,13 @@ class ShopController extends Controller
             'inventory' => $player->inventory
                 ->reject(fn (InventoryItem $stack) => $stack->item->slug === 'coins')
                 ->map(function (InventoryItem $stack) use ($stockByItem) {
+                    $removedFromShop = in_array($stack->item->slug, self::REMOVED_STOCK_SLUGS, true);
                     $shopRow = $stockByItem->get($stack->item_id);
-                    $sellPrice = $shopRow
-                        ? $shopRow->buy_price
-                        : $this->generalStoreBuyPrice($stack->item);
+                    $sellPrice = $removedFromShop
+                        ? 0
+                        : ($shopRow
+                            ? $shopRow->buy_price
+                            : $this->generalStoreBuyPrice($stack->item));
 
                     return [
                         'slot' => $stack->slot,
