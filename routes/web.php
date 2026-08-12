@@ -10,7 +10,8 @@ Route::get('/', function () {
         : redirect()->route('login');
 })->name('home');
 
-Route::redirect('dashboard', '/main', 301);
+// Backward-compatible alias for starter-kit frontend references and old bookmarks.
+Route::redirect('dashboard', '/main', 301)->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('main', [GameController::class, 'show'])->name('main');
