@@ -8,6 +8,9 @@ type LocationItem = {
     requiredLevel?: number;
     level?: number;
     slug?: string;
+    href?: string;
+    post?: string;
+    buttonLabel?: string;
 };
 
 interface Props {
@@ -29,10 +32,30 @@ const coldbreezeStarterMonsters: LocationItem[] = [
     { name: 'Duck', slug: 'duck', level: 1 },
 ];
 
+const coldbreezeStarterNpcs: LocationItem[] = [
+    {
+        name: 'Parduotuvė',
+        detail: 'Pardavėjas',
+        href: '/game/shop',
+        buttonLabel: 'Atidaryti',
+    },
+    {
+        name: 'Naujokų gidas',
+        post: '/game/npc/newcomer-guide',
+        buttonLabel: 'Kalbėti',
+    },
+];
+
 export default function LocationCategory({ location, category, items }: Props) {
-    const displayItems = category.key === 'monsters' && location.name === 'Coldbreeze Port'
-        ? coldbreezeStarterMonsters
-        : items;
+    let displayItems = items;
+
+    if (location.name === 'Coldbreeze Port' && category.key === 'monsters') {
+        displayItems = coldbreezeStarterMonsters;
+    }
+
+    if (location.name === 'Coldbreeze Port' && category.key === 'npcs') {
+        displayItems = coldbreezeStarterNpcs;
+    }
 
     return (
         <div className="game-shell location-list-page">
@@ -73,6 +96,31 @@ export default function LocationCategory({ location, category, items }: Props) {
                                         onClick={() => router.post(`/game/actions/attack/${item.slug}`)}
                                     >
                                         Fight
+                                    </button>
+                                </div>
+                            );
+                        }
+
+                        const action = item.href || item.post;
+                        if (action) {
+                            return (
+                                <div className="location-list-row npc-action-row" key={`${item.name}-${index}`}>
+                                    <div>
+                                        <strong>{item.name}</strong>
+                                        {item.detail && <span>{item.detail}</span>}
+                                    </div>
+                                    <button
+                                        className="monster-fight-button"
+                                        type="button"
+                                        onClick={() => {
+                                            if (item.href) {
+                                                router.visit(item.href);
+                                            } else if (item.post) {
+                                                router.post(item.post);
+                                            }
+                                        }}
+                                    >
+                                        {item.buttonLabel ?? 'Atidaryti'}
                                     </button>
                                 </div>
                             );
