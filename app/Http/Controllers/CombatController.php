@@ -7,6 +7,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Player;
 use App\Models\PlayerBackpack;
+use App\Models\PlayerSkill;
 use App\Services\CombatCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -220,8 +221,6 @@ class CombatController extends Controller
                 $monsterData['strength_level'],
                 $monsterData['strength_bonus'],
             );
-        $monsterAttackIntervalMs = max(250, (int) $monsterData['attack_interval_ms']);
-        $nowMs = $this->nowMs();
 
         CombatEncounter::updateOrCreate(
             ['player_id' => $player->id],
@@ -236,17 +235,48 @@ class CombatController extends Controller
                 'player_style' => $style,
                 'player_max_hit' => $playerMaxHit,
                 'player_attack_interval_ms' => $playerAttackIntervalMs,
-                'monster_attack_interval_ms' => $monsterAttackIntervalMs,
+                'monster_attack_interval_ms' => max(250, (int) $monsterData['attack_interval_ms']),
                 'player_attack_roll' => $playerAttackRoll,
                 'player_defence_roll' => $playerDefenceRoll,
                 'monster_attack_roll' => $monsterAttackRoll,
                 'monster_defence_roll' => $monsterDefenceRoll,
-                'player_next_attack_ms' => $nowMs,
-                'monster_next_attack_ms' => $nowMs + $monsterAttackIntervalMs,
-                'status' => 'active',
-                'last_event' => "Kova su {$monsterData['name']} prasidėjo.",
+                'player_next_attack_ms' => null,
+                'monster_next_attack_ms' => null,
+                'status' => 'ready',
+                'last_event' => 'Paspausk Hit, kad pradėtum kovą.',
+                'combat_log' => [],
+                'loot' => ['received' => [], 'lost' => []],
+                'ended_at_ms' => null,
             ],
         );
+
+        return redirect()->route('game.combat');
+    }
+
+    public function hit(Request $request): RedirectResponse
+    {
+        $player = $this->player($request);
+
+        DB::transaction(function () use ($player): void {
+            $encounter = CombatEncounter::query()
+                ->where('player_id', $player->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($encounter->status !== 'ready') {
+                return;
+            }
+
+            $nowMs = $this->nowMs();
+            $encounter->status = 'active';
+            $encounter->player_next_attack_ms = $nowMs + $encounter->player_attack_interval_ms;
+            $encounter->monster_next_attack_ms = $nowMs + $encounter->monster_attack_interval_ms;
+            $encounter->last_event = 'Kova prasidėjo.';
+            $encounter->combat_log = [];
+            $encounter->loot = ['received' => [], 'lost' => []];
+            $encounter->ended_at_ms = null;
+            $encounter->save();
+        });
 
         return redirect()->route('game.combat');
     }
@@ -258,7 +288,7 @@ class CombatController extends Controller
 
         if ($encounter) {
             $encounter = $this->process($player, $encounter);
-            $player->refresh();
+            $player->refresh()->load('skills');
         }
 
         return Inertia::render('combat', [
@@ -276,7 +306,7 @@ class CombatController extends Controller
         }
 
         $encounter = $this->process($player, $encounter);
-        $player->refresh();
+        $player->refresh()->load('skills');
 
         return response()->json([
             'combat' => $this->payload($player, $encounter),
@@ -286,14 +316,16 @@ class CombatController extends Controller
     public function leave(Request $request): RedirectResponse
     {
         $player = $this->player($request);
+        $nowMs = $this->nowMs();
 
         CombatEncounter::query()
             ->where('player_id', $player->id)
-            ->where('status', 'active')
+            ->whereIn('status', ['ready', 'active'])
             ->update([
                 'status' => 'fled',
                 'player_next_attack_ms' => null,
                 'monster_next_attack_ms' => null,
+                'ended_at_ms' => $nowMs,
                 'last_event' => 'Pasitraukei iš kovos.',
             ]);
 
@@ -303,7 +335,7 @@ class CombatController extends Controller
     private function player(Request $request): Player
     {
         return Player::query()
-            ->with('location')
+            ->with(['location', 'skills'])
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
     }
@@ -315,29 +347,26 @@ class CombatController extends Controller
         }
 
         return DB::transaction(function () use ($player, $encounter) {
-            $lockedPlayer = Player::query()->whereKey($player->id)->lockForUpdate()->firstOrFail();
-            $locked = CombatEncounter::query()->whereKey($encounter->id)->lockForUpdate()->firstOrFail();
+            $lockedPlayer = Player::query()
+                ->with('skills')
+                ->whereKey($player->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $locked = CombatEncounter::query()
+                ->whereKey($encounter->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             if ($locked->status !== 'active') {
                 return $locked;
             }
 
             $nowMs = $this->nowMs();
-
-            if ($locked->player_next_attack_ms === null) {
-                $locked->player_next_attack_ms = $nowMs;
-            }
-
-            if ($locked->monster_next_attack_ms === null) {
-                $locked->monster_next_attack_ms = $nowMs + $locked->monster_attack_interval_ms;
-            }
-
             $iterations = 0;
 
             while ($locked->status === 'active' && $iterations < 100) {
                 $playerAt = $locked->player_next_attack_ms;
                 $monsterAt = $locked->monster_next_attack_ms;
-
                 $playerDue = $playerAt !== null && $playerAt <= $nowMs;
                 $monsterDue = $monsterAt !== null && $monsterAt <= $nowMs;
 
@@ -345,9 +374,7 @@ class CombatController extends Controller
                     break;
                 }
 
-                $playerActsFirst = $playerDue && (
-                    ! $monsterDue || $playerAt <= $monsterAt
-                );
+                $playerActsFirst = $playerDue && (! $monsterDue || $playerAt <= $monsterAt);
 
                 if ($playerActsFirst) {
                     $hit = $this->calculator->rollHit(
@@ -357,31 +384,24 @@ class CombatController extends Controller
                     $damage = $hit
                         ? $this->calculator->rollDamage($locked->player_max_hit)
                         : 0;
+                    $xp = $damage > 0
+                        ? $this->awardCombatXp($lockedPlayer, $locked->player_style, $damage)
+                        : [];
 
                     $locked->monster_hp = max(0, $locked->monster_hp - $damage);
                     $locked->last_event = $hit
-                        ? "Pataikei {$damage}."
-                        : 'Nepataikei.';
+                        ? "{$lockedPlayer->name} padarė {$damage} žalos."
+                        : "{$lockedPlayer->name} nepataikė.";
                     $locked->player_next_attack_ms = $playerAt + $locked->player_attack_interval_ms;
+                    $this->appendCombatLog($locked, 'player', $damage, $hit, $xp, $playerAt);
 
                     if ($locked->monster_hp <= 0) {
                         $locked->status = 'won';
                         $locked->player_next_attack_ms = null;
                         $locked->monster_next_attack_ms = null;
-
-                        $loot = $this->awardMonsterDrops($lockedPlayer, $locked->monster_slug);
-                        $lootText = $this->formatLoot($loot['received']);
-                        $lostText = $this->formatLoot($loot['lost']);
-
-                        $locked->last_event = "Nugalėjai {$locked->monster_name}.";
-
-                        if ($lootText !== '') {
-                            $locked->last_event .= " Laimikis: {$lootText}.";
-                        }
-
-                        if ($lostText !== '') {
-                            $locked->last_event .= " Netilpo į inventorių: {$lostText}.";
-                        }
+                        $locked->ended_at_ms = $nowMs;
+                        $locked->loot = $this->awardMonsterDrops($lockedPlayer, $locked->monster_slug);
+                        $locked->last_event = "{$locked->monster_name} nugalėtas.";
                     }
                 } else {
                     $hit = $this->calculator->rollHit(
@@ -391,23 +411,24 @@ class CombatController extends Controller
                     $damage = $hit
                         ? $this->calculator->rollDamage($locked->monster_max_hit)
                         : 0;
-                    $remainingHp = $lockedPlayer->hitpoints - $damage;
+                    $remainingHp = max(0, $lockedPlayer->hitpoints - $damage);
+
+                    $lockedPlayer->hitpoints = $remainingHp;
+                    $lockedPlayer->save();
+                    $locked->last_event = $hit
+                        ? "{$locked->monster_name} padarė {$damage} žalos."
+                        : "{$locked->monster_name} nepataikė.";
+                    $locked->monster_next_attack_ms = $monsterAt + $locked->monster_attack_interval_ms;
+                    $this->appendCombatLog($locked, 'monster', $damage, $hit, [], $monsterAt);
 
                     if ($remainingHp <= 0) {
-                        $lockedPlayer->hitpoints = 10;
                         $locked->status = 'lost';
                         $locked->player_next_attack_ms = null;
                         $locked->monster_next_attack_ms = null;
-                        $locked->last_event = "{$locked->monster_name} tave nugalėjo.";
-                    } else {
-                        $lockedPlayer->hitpoints = $remainingHp;
-                        $locked->last_event = $hit
-                            ? "{$locked->monster_name} pataikė {$damage}."
-                            : "{$locked->monster_name} nepataikė.";
-                        $locked->monster_next_attack_ms = $monsterAt + $locked->monster_attack_interval_ms;
+                        $locked->ended_at_ms = $nowMs;
+                        $locked->loot = ['received' => [], 'lost' => []];
+                        $locked->last_event = "{$lockedPlayer->name} nugalėtas.";
                     }
-
-                    $lockedPlayer->save();
                 }
 
                 $locked->save();
@@ -420,14 +441,23 @@ class CombatController extends Controller
 
     private function payload(Player $player, CombatEncounter $encounter): array
     {
+        $prayerLevel = $this->skillLevel($player, 'prayer');
+
         return [
             'status' => $encounter->status,
             'serverNowMs' => $this->nowMs(),
+            'resultReadyAtMs' => $encounter->ended_at_ms !== null
+                ? $encounter->ended_at_ms + 2000
+                : null,
             'damageScale' => 10,
             'style' => $encounter->player_style,
             'player' => [
+                'name' => $player->name,
+                'level' => $this->combatLevel($player),
                 'hp' => $player->hitpoints,
                 'maxHp' => $player->max_hitpoints,
+                'mana' => $player->prayer_mana,
+                'maxMana' => max(100, $prayerLevel * 100),
                 'attackIntervalMs' => $encounter->player_attack_interval_ms,
                 'attackSeconds' => $encounter->player_attack_interval_ms / 1000,
                 'maxHit' => $encounter->player_max_hit,
@@ -456,8 +486,81 @@ class CombatController extends Controller
                 ),
                 'nextAttackAtMs' => $encounter->monster_next_attack_ms,
             ],
+            'combatLog' => array_values($encounter->combat_log ?? []),
+            'loot' => $encounter->loot ?? ['received' => [], 'lost' => []],
             'lastEvent' => $encounter->last_event,
         ];
+    }
+
+    private function appendCombatLog(
+        CombatEncounter $encounter,
+        string $actor,
+        int $damage,
+        bool $hit,
+        array $xp,
+        int $atMs,
+    ): void {
+        $log = $encounter->combat_log ?? [];
+        $last = $log === [] ? null : $log[array_key_last($log)];
+
+        $log[] = [
+            'id' => ((int) ($last['id'] ?? 0)) + 1,
+            'actor' => $actor,
+            'damage' => $damage,
+            'hit' => $hit,
+            'xp' => $xp,
+            'atMs' => $atMs,
+        ];
+
+        $encounter->combat_log = array_slice($log, -60);
+    }
+
+    private function awardCombatXp(Player $player, string $style, int $damage): array
+    {
+        if ($damage <= 0) {
+            return [];
+        }
+
+        $awards = match ($style) {
+            'ranged' => [
+                ['skill' => 'ranged', 'amount' => max(1, (int) floor($damage * 0.4))],
+                ['skill' => 'hitpoints', 'amount' => max(1, (int) floor($damage * 0.133))],
+            ],
+            'magic' => [
+                ['skill' => 'magic', 'amount' => max(1, (int) floor($damage * 0.4))],
+                ['skill' => 'hitpoints', 'amount' => max(1, (int) floor($damage * 0.133))],
+            ],
+            default => [
+                ['skill' => 'attack', 'amount' => max(1, (int) floor($damage * 0.2))],
+                ['skill' => 'strength', 'amount' => max(1, (int) floor($damage * 0.2))],
+                ['skill' => 'hitpoints', 'amount' => max(1, (int) floor($damage * 0.133))],
+            ],
+        };
+
+        foreach ($awards as $award) {
+            $this->grantSkillXp($player->id, $award['skill'], $award['amount']);
+        }
+
+        return $awards;
+    }
+
+    private function grantSkillXp(int $playerId, string $skill, int $amount): void
+    {
+        $row = PlayerSkill::query()
+            ->where('player_id', $playerId)
+            ->where('skill', $skill)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $row) {
+            $row = PlayerSkill::create([
+                'player_id' => $playerId,
+                'skill' => $skill,
+                'xp' => 0,
+            ]);
+        }
+
+        $row->increment('xp', $amount);
     }
 
     private function awardMonsterDrops(Player $player, string $monsterSlug): array
@@ -494,19 +597,18 @@ class CombatController extends Controller
             }
         }
 
-        foreach ($table['tertiary'] ?? [] as $drop) {
-            if (random_int(1, (int) $drop['one_in']) === 1) {
-                $this->awardDrop($player, $drop, $received, $lost);
-            }
-        }
-
         return ['received' => $received, 'lost' => $lost];
     }
 
     private function awardDrop(Player $player, array $drop, array &$received, array &$lost): void
     {
         $quantity = (int) ($drop['quantity'] ?? 1);
-        $entry = ['name' => $drop['name'], 'quantity' => $quantity];
+        $entry = [
+            'slug' => $drop['slug'],
+            'name' => $drop['name'],
+            'quantity' => $quantity,
+            'icon' => $drop['icon'] ?? 'package',
+        ];
 
         $added = $this->grantItem(
             $player,
@@ -522,15 +624,6 @@ class CombatController extends Controller
         } else {
             $lost[] = $entry;
         }
-    }
-
-    private function formatLoot(array $loot): string
-    {
-        return collect($loot)
-            ->map(fn (array $drop) => $drop['quantity'] > 1
-                ? "{$drop['quantity']}× {$drop['name']}"
-                : $drop['name'])
-            ->implode(', ');
     }
 
     private function grantItem(
@@ -624,7 +717,7 @@ class CombatController extends Controller
 
         $bonus = $player->backpacks
             ->take($player->backpack_slots_unlocked)
-            ->sum(fn (PlayerBackpack $slot) => (int) ($slot->item?->inventory_slots_bonus ?? 0));
+            ->sum(fn ($slot) => (int) ($slot->item?->inventory_slots_bonus ?? 0));
 
         return (int) $player->inventory_base_slots + $bonus;
     }
@@ -649,6 +742,8 @@ class CombatController extends Controller
 
     private function equipmentBonuses(Player $player): array
     {
+        $player->loadMissing('equipment.item');
+
         return [
             'attack' => $player->equipment->sum(fn ($slot) => (int) ($slot->item?->attack_bonus ?? 0)),
             'strength' => $player->equipment->sum(fn ($slot) => (int) ($slot->item?->strength_bonus ?? 0)),
@@ -658,9 +753,30 @@ class CombatController extends Controller
 
     private function skillLevel(Player $player, string $skill): int
     {
+        $player->loadMissing('skills');
         $row = $player->skills->firstWhere('skill', $skill);
 
-        return $this->calculator->levelForXp((int) ($row?->xp ?? 0));
+        return $this->calculator->levelForXp(
+            (int) ($row?->xp ?? 0),
+            $skill === 'hitpoints' ? 10 : 1,
+        );
+    }
+
+    private function combatLevel(Player $player): int
+    {
+        $player->loadMissing('skills');
+        $skills = $player->skills->keyBy('skill');
+        $level = fn (string $name, int $default = 1) => $this->calculator->levelForXp(
+            (int) ($skills->get($name)?->xp ?? 0),
+            $default,
+        );
+
+        $base = 0.25 * ($level('defence') + $level('hitpoints', 10) + floor($level('prayer') / 2));
+        $melee = 0.325 * ($level('attack') + $level('strength'));
+        $ranged = 0.325 * floor($level('ranged') * 1.5);
+        $magic = 0.325 * floor($level('magic') * 1.5);
+
+        return max(3, (int) floor($base + max($melee, $ranged, $magic)));
     }
 
     private function nowMs(): int
