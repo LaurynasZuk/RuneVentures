@@ -18,7 +18,7 @@ import {
     Heart,
     House,
     LockKeyhole,
-    Map,
+    Map as MapIcon,
     Orbit,
     Package,
     PawPrint,
@@ -635,7 +635,7 @@ export default function Game({
             </main>
 
             <nav className="bottom-nav">
-                <Nav icon={<Map />} label="World" active={tab === null} onClick={openWorld} />
+                <Nav icon={<MapIcon />} label="World" active={tab === null} onClick={openWorld} />
                 <Nav icon={<Swords />} label="Combat" active={tab === 'combat'} onClick={() => setTab('combat')} />
                 <Nav icon={<Sparkles />} label="Stats" active={tab === 'skills'} onClick={() => setTab('skills')} />
                 <Nav icon={<Backpack />} label="Inventory" active={tab === 'inventory'} onClick={() => setTab('inventory')} />
