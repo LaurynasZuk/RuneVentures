@@ -1,4 +1,61 @@
 @layer components {
+    .game-shell .inventory-grid-25 .item-slot {
+        width: 100%;
+        min-height: 0;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        box-sizing: border-box;
+    }
+
+    .game-shell .equipment-grid {
+        grid-template-columns: repeat(5, minmax(0, 3.25rem));
+        grid-template-areas:
+            '. . head . .'
+            'cape neck body ring ring2'
+            '. hands legs feet .'
+            '. trinket1 . trinket2 .'
+            '. weapon shield ammo .';
+        justify-content: center;
+        gap: .38rem;
+        padding: .7rem .45rem;
+    }
+
+    .game-shell .equipment-slot {
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        box-sizing: border-box;
+        gap: .12rem;
+        padding: .25rem;
+    }
+
+    .game-shell .equipment-slot svg {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .game-shell .equipment-slot span,
+    .game-shell .equipment-slot strong {
+        font-size: .49rem;
+    }
+
+    .game-shell .equipment-grid .slot-head { grid-area: head; }
+    .game-shell .equipment-grid .slot-cape { grid-area: cape; }
+    .game-shell .equipment-grid .slot-neck { grid-area: neck; }
+    .game-shell .equipment-grid .slot-body { grid-area: body; }
+    .game-shell .equipment-grid .slot-hands { grid-area: hands; }
+    .game-shell .equipment-grid .slot-legs { grid-area: legs; }
+    .game-shell .equipment-grid .slot-feet { grid-area: feet; }
+    .game-shell .equipment-grid .slot-ring { grid-area: ring; }
+    .game-shell .equipment-grid .slot-ring2 { grid-area: ring2; }
+    .game-shell .equipment-grid .slot-trinket1 { grid-area: trinket1; }
+    .game-shell .equipment-grid .slot-trinket2 { grid-area: trinket2; }
+    .game-shell .equipment-grid .slot-weapon { grid-area: weapon; }
+    .game-shell .equipment-grid .slot-shield { grid-area: shield; }
+    .game-shell .equipment-grid .slot-ammo { grid-area: ammo; }
+
     .game-shell .inventory-grid-25 .item-slot.filled[data-equipment-action],
     .game-shell .equipment-grid .equipment-slot.equipped[data-equipment-action] {
         cursor: pointer;
@@ -24,22 +81,50 @@
     .game-shell .equipment-grid .slot-weapon,
     .game-shell .equipment-grid .slot-shield,
     .game-shell .equipment-grid .slot-ammo {
+        margin-top: .42rem;
         border-color: #74675e;
+        background: linear-gradient(145deg, rgba(96, 63, 45, .24), #111113 72%);
+    }
+
+    .game-shell .equipment-grid .slot-weapon.equipped,
+    .game-shell .equipment-grid .slot-shield.equipped,
+    .game-shell .equipment-grid .slot-ammo.equipped {
+        border-color: #927866;
+        background: linear-gradient(145deg, rgba(112, 72, 50, .38), #171315 72%);
     }
 
     .game-shell .equipment-grid .slot-weapon::after,
     .game-shell .equipment-grid .slot-shield::after,
     .game-shell .equipment-grid .slot-ammo::after {
         display: block;
-        margin-top: .08rem;
+        margin-top: .02rem;
         color: #766f69;
-        font-size: .45rem;
+        font-size: .36rem;
         line-height: 1;
-        letter-spacing: .06em;
+        letter-spacing: .04em;
         text-transform: uppercase;
     }
 
     .game-shell .equipment-grid .slot-weapon::after { content: '1H / 2H'; }
     .game-shell .equipment-grid .slot-shield::after { content: 'Shield'; }
     .game-shell .equipment-grid .slot-ammo::after { content: 'Ammo'; }
+
+    .game-shell .equipment-grid .slot-ring:not(.equipped) > span,
+    .game-shell .equipment-grid .slot-ring2:not(.equipped) > span,
+    .game-shell .equipment-grid .slot-trinket1:not(.equipped) > span,
+    .game-shell .equipment-grid .slot-trinket2:not(.equipped) > span {
+        font-size: 0;
+    }
+
+    .game-shell .equipment-grid .slot-ring:not(.equipped) > span::after,
+    .game-shell .equipment-grid .slot-ring2:not(.equipped) > span::after,
+    .game-shell .equipment-grid .slot-trinket1:not(.equipped) > span::after,
+    .game-shell .equipment-grid .slot-trinket2:not(.equipped) > span::after {
+        font-size: .49rem;
+    }
+
+    .game-shell .equipment-grid .slot-ring:not(.equipped) > span::after { content: 'Ring 1'; }
+    .game-shell .equipment-grid .slot-ring2:not(.equipped) > span::after { content: 'Ring 2'; }
+    .game-shell .equipment-grid .slot-trinket1:not(.equipped) > span::after { content: 'Trinket 1'; }
+    .game-shell .equipment-grid .slot-trinket2:not(.equipped) > span::after { content: 'Trinket 2'; }
 }
