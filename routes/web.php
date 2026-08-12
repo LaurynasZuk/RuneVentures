@@ -10,6 +10,8 @@ Route::get('/', function () {
         : redirect()->route('login');
 })->name('home');
 
+Route::redirect('dashboard', '/main', 301);
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('main', [GameController::class, 'show'])->name('main');
     Route::get('game/location/{location}/{category}', [GameController::class, 'locationCategory'])
