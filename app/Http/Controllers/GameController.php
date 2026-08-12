@@ -20,6 +20,8 @@ class GameController extends Controller
         $player = $this->player($request);
         $player->load(['location.destinations', 'skills', 'inventory.item']);
 
+        $world = $this->worldMap();
+
         return Inertia::render('game', [
             'player' => [
                 'name' => $player->name,
@@ -31,14 +33,18 @@ class GameController extends Controller
             'location' => [
                 'id' => $player->location->id,
                 'name' => $player->location->name,
+                'slug' => $player->location->slug,
                 'region' => $player->location->region,
                 'description' => $player->location->description,
                 'connections' => $player->location->destinations->map(fn (Location $location) => [
                     'id' => $location->id,
                     'name' => $location->pivot->label,
                     'travelSeconds' => $location->pivot->travel_seconds,
-                ]),
-                'content' => $this->locationContent($player->location->slug),
+                ])->values(),
+            ],
+            'worldMap' => [
+                'nodes' => $world['nodes'],
+                'edges' => $world['edges'],
             ],
             'skills' => $player->skills->mapWithKeys(fn (PlayerSkill $skill) => [$skill->skill => [
                 'xp' => $skill->xp,
@@ -51,6 +57,36 @@ class GameController extends Controller
                 'quantity' => $slot->quantity,
             ]),
             'flash' => ['game' => session('game')],
+        ]);
+    }
+
+    public function locationCategory(Request $request, Location $location, string $category): Response
+    {
+        $player = $this->player($request);
+        abort_unless($player->location_id === $location->id, 403);
+
+        $labels = [
+            'monsters' => 'Monstrai',
+            'npcs' => 'Personažai',
+            'resources' => 'Resursai',
+            'objects' => 'Objektai',
+        ];
+
+        abort_unless(isset($labels[$category]), 404);
+
+        $content = $this->locationContent($location->slug);
+
+        return Inertia::render('location-category', [
+            'location' => [
+                'id' => $location->id,
+                'name' => $location->name,
+                'region' => $location->region,
+            ],
+            'category' => [
+                'key' => $category,
+                'label' => $labels[$category],
+            ],
+            'items' => $content[$category],
         ]);
     }
 
@@ -67,7 +103,7 @@ class GameController extends Controller
     public function chop(Request $request): RedirectResponse
     {
         $player = $this->player($request);
-        abort_unless(in_array($player->location->slug, ['starter-village', 'whispering-woods'], true), 403);
+        abort_unless(in_array($player->location->slug, ['starter-village'], true), 403);
 
         DB::transaction(function () use ($player) {
             $this->grantXp($player, 'woodcutting', 25);
@@ -122,32 +158,61 @@ class GameController extends Controller
 
     private function ensureWorld(): Location
     {
-        $village = Location::firstOrCreate(
+        $start = Location::firstOrCreate(
             ['slug' => 'starter-village'],
             [
                 'name' => 'Aldor Village',
-                'description' => 'A quiet frontier settlement where every adventure begins.',
-                'region' => 'Greenreach',
+                'description' => 'Pradinė vietovė prie senojo kelio į pajūrį.',
+                'region' => 'Vakarinis kraštas',
             ],
         );
 
-        $woods = Location::firstOrCreate(
-            ['slug' => 'whispering-woods'],
+        $port = Location::firstOrCreate(
+            ['slug' => 'port'],
             [
-                'name' => 'Whispering Woods',
-                'description' => 'Silver leaves whisper old secrets beneath a dim green canopy.',
-                'region' => 'Greenreach',
+                'name' => 'Uostas',
+                'description' => 'Pakrantės miestas, kuriame susitinka keliautojai, prekeiviai ir jūrininkai.',
+                'region' => 'Vakarinis kraštas',
             ],
         );
 
-        $village->destinations()->syncWithoutDetaching([
-            $woods->id => ['label' => 'Whispering Woods', 'travel_seconds' => 4],
-        ]);
-        $woods->destinations()->syncWithoutDetaching([
-            $village->id => ['label' => 'Aldor Village', 'travel_seconds' => 4],
+        $start->destinations()->sync([
+            $port->id => ['label' => 'Uostas', 'travel_seconds' => 4],
         ]);
 
-        return $village;
+        $port->destinations()->sync([
+            $start->id => ['label' => 'Aldor Village', 'travel_seconds' => 4],
+        ]);
+
+        return $start;
+    }
+
+    private function worldMap(): array
+    {
+        $start = Location::where('slug', 'starter-village')->firstOrFail();
+        $port = Location::where('slug', 'port')->firstOrFail();
+
+        return [
+            'nodes' => [
+                [
+                    'id' => $start->id,
+                    'name' => $start->name,
+                    'type' => 'Vietovė',
+                    'x' => 170,
+                    'y' => 150,
+                ],
+                [
+                    'id' => $port->id,
+                    'name' => $port->name,
+                    'type' => 'Miestas',
+                    'x' => 540,
+                    'y' => 150,
+                ],
+            ],
+            'edges' => [
+                ['from' => $start->id, 'to' => $port->id],
+            ],
+        ];
     }
 
     private function grantXp(Player $player, string $skill, int $amount): void
@@ -196,34 +261,32 @@ class GameController extends Controller
     private function locationContent(string $slug): array
     {
         return match ($slug) {
-            'whispering-woods' => [
+            'port' => [
                 'objects' => [
-                    ['name' => 'Abandoned shrine', 'detail' => 'Ancient runes cover the stone.'],
+                    ['name' => 'Uosto vartai', 'detail' => 'Pagrindinis įėjimas į prieplaukos rajoną.'],
                 ],
                 'npcs' => [
-                    ['name' => 'Elowen', 'detail' => 'Wandering herbalist'],
+                    ['name' => 'Uosto sargas', 'detail' => 'Prižiūri miesto prieplauką.'],
                 ],
                 'resources' => [
-                    ['name' => 'Old tree', 'action' => 'chop', 'requiredLevel' => 1],
+                    ['name' => 'Žvejybos vieta', 'detail' => 'Rami vieta prie medinio molo.'],
                 ],
                 'monsters' => [
-                    ['name' => 'Forest spider', 'slug' => 'forest-spider', 'level' => 3, 'xp' => 18],
+                    ['name' => 'Uosto žiurkė', 'slug' => 'port-rat', 'level' => 2, 'xp' => 12],
                 ],
             ],
             default => [
                 'objects' => [
-                    ['name' => 'Village well', 'detail' => 'The water is cold and clear.'],
-                    ['name' => 'Bank chest', 'detail' => 'Coming soon'],
+                    ['name' => 'Senas šulinys', 'detail' => 'Akmeninis šulinys prie pagrindinio kelio.'],
                 ],
                 'npcs' => [
-                    ['name' => 'Elder Rowan', 'detail' => 'Village elder'],
-                    ['name' => 'Mara', 'detail' => 'General store keeper'],
+                    ['name' => 'Kelio sargas', 'detail' => 'Stebi kelią į Uostą.'],
                 ],
                 'resources' => [
-                    ['name' => 'Tree', 'action' => 'chop', 'requiredLevel' => 1],
+                    ['name' => 'Medis', 'action' => 'chop', 'requiredLevel' => 1],
                 ],
                 'monsters' => [
-                    ['name' => 'Giant rat', 'slug' => 'giant-rat', 'level' => 2, 'xp' => 12],
+                    ['name' => 'Didžioji žiurkė', 'slug' => 'giant-rat', 'level' => 2, 'xp' => 12],
                 ],
             ],
         };
