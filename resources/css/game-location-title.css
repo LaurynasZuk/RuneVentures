@@ -29,3 +29,26 @@
 .world-map-title {
     display: none;
 }
+
+/* Compact world overview: show more connected locations at once. */
+.world-map-viewport {
+    height: 19rem;
+}
+
+.world-map-canvas {
+    left: 1rem;
+    top: .25rem;
+    scale: .57;
+    transform-origin: 0 0;
+}
+
+/* Keep nodes and labels readable while the map itself is zoomed out. */
+.world-map-node {
+    scale: 1.2;
+}
+
+@media (max-width: 420px) {
+    .world-map-viewport {
+        height: 19rem;
+    }
+}
