@@ -91,8 +91,46 @@
         font-size: .86rem;
     }
 
+    .shop-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: .75rem;
+        border: 1px solid #62584f;
+        background: #0e0e10;
+        overflow: hidden;
+    }
+
+    .shop-tabs button {
+        min-height: 2.55rem;
+        border-right: 1px solid #443d38;
+        background: linear-gradient(180deg, #171416, #111113);
+        color: #8f8982;
+        font-size: .69rem;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .shop-tabs button:last-child {
+        border-right: 0;
+    }
+
+    .shop-tabs button.active {
+        background: linear-gradient(180deg, #35251d, #1e1715);
+        color: #e3ddd4;
+        box-shadow: inset 0 -2px 0 #8b6045;
+    }
+
+    .shop-tabs button:active {
+        background: #211814;
+    }
+
     .shop-section {
         margin-top: .8rem;
+    }
+
+    .shop-tab-panel {
+        margin-top: .65rem;
     }
 
     .shop-section-title {
