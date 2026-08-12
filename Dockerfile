@@ -35,15 +35,18 @@ WORKDIR /var/www/html
 
 COPY . .
 
+# Keep build phases separate so Render reports the exact failing step.
 RUN composer install \
-        --no-dev \
-        --no-interaction \
-        --prefer-dist \
-        --optimize-autoloader \
-    && php artisan route:clear \
-    && npm ci \
-    && npm run build \
-    && rm -rf node_modules \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --optimize-autoloader
+
+RUN php artisan route:clear
+RUN npm ci
+RUN npm run build
+
+RUN rm -rf node_modules \
     && npm cache clean --force \
     && chown -R www-data:www-data storage bootstrap/cache \
     && sed -ri 's!DocumentRoot /var/www/html!DocumentRoot /var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
