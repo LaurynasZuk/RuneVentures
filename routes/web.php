@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\CombatController;
+use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\NpcController;
+use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -25,6 +28,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('game/combat/state', [CombatController::class, 'state'])->name('game.combat.state');
     Route::post('game/combat/hit', [CombatController::class, 'hit'])->name('game.combat.hit');
     Route::post('game/combat/leave', [CombatController::class, 'leave'])->name('game.combat.leave');
+
+    Route::get('game/shop', [ShopController::class, 'show'])->name('game.shop');
+    Route::post('game/shop/buy/{stock}', [ShopController::class, 'buy'])->name('game.shop.buy');
+    Route::post('game/shop/sell/{slot}', [ShopController::class, 'sell'])->name('game.shop.sell');
+    Route::post('game/npc/newcomer-guide', [NpcController::class, 'newcomerGuide'])->name('game.npc.newcomer-guide');
+
+    Route::post('game/equipment/equip/{slot}', [EquipmentController::class, 'equip'])->name('game.equipment.equip');
+    Route::post('game/equipment/unequip/{slot}', [EquipmentController::class, 'unequip'])->name('game.equipment.unequip');
 });
 
 require __DIR__.'/settings.php';
