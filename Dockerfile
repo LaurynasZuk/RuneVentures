@@ -12,6 +12,7 @@ RUN apt-get update \
         git \
         libpq-dev \
         unzip \
+        xz-utils \
     && docker-php-ext-install pdo_pgsql \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
