@@ -8,39 +8,68 @@
     }
 
     .game-shell .equipment-grid {
-        grid-template-columns: repeat(5, 2.75rem);
+        grid-template-columns: repeat(3, 3.6rem);
         grid-template-areas:
-            '. trinket1 head trinket2 .'
-            'cape neck body hands legs'
-            '. ring feet ring2 .'
-            '. weapon shield ammo .';
+            'trinket1 head trinket2'
+            'neck body cape'
+            'belt legs hands'
+            'ring feet ring2'
+            'weapon shield ammo';
         justify-content: center;
-        gap: .28rem;
-        padding: .55rem .35rem;
+        gap: .38rem;
+        padding: .7rem .55rem;
+    }
+
+    .game-shell .equipment-slot,
+    .game-shell .equipment-grid::before {
+        width: 3.6rem;
+        min-width: 3.6rem;
+        max-width: 3.6rem;
+        min-height: 3.6rem;
+        height: 3.6rem;
+        aspect-ratio: 1 / 1;
+        box-sizing: border-box;
+        border: 1px solid #57514c;
+        border-radius: .25rem;
+        background: linear-gradient(145deg, #171416, #0d0d0f);
+        color: #87817b;
+        box-shadow: inset 0 0 0 1px #1e1b1d;
     }
 
     .game-shell .equipment-slot {
-        width: 2.75rem;
-        min-width: 2.75rem;
-        max-width: 2.75rem;
-        min-height: 0;
-        height: 2.75rem;
-        aspect-ratio: 1 / 1;
-        box-sizing: border-box;
-        gap: .08rem;
-        padding: .2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .14rem;
+        padding: .3rem;
+        text-align: center;
+    }
+
+    .game-shell .equipment-grid::before {
+        content: 'Belt';
+        grid-area: belt;
+        display: grid;
+        place-items: center;
+        font-size: .52rem;
+        font-weight: 600;
+        line-height: 1;
+        text-align: center;
     }
 
     .game-shell .equipment-slot svg {
-        width: .9rem;
-        height: .9rem;
+        width: 1.05rem;
+        height: 1.05rem;
     }
 
     .game-shell .equipment-slot span,
     .game-shell .equipment-slot strong {
         max-width: 100%;
-        font-size: .43rem;
+        overflow: hidden;
+        font-size: .52rem;
         line-height: 1.05;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .game-shell .equipment-grid .slot-head { grid-area: head; }
@@ -83,7 +112,6 @@
     .game-shell .equipment-grid .slot-weapon,
     .game-shell .equipment-grid .slot-shield,
     .game-shell .equipment-grid .slot-ammo {
-        margin-top: .42rem;
         border-color: #74675e;
         background: linear-gradient(145deg, rgba(96, 63, 45, .24), #111113 72%);
     }
@@ -101,7 +129,7 @@
         display: block;
         margin-top: 0;
         color: #766f69;
-        font-size: .31rem;
+        font-size: .34rem;
         line-height: 1;
         letter-spacing: .03em;
         text-transform: uppercase;
@@ -122,7 +150,7 @@
     .game-shell .equipment-grid .slot-ring2:not(.equipped) > span::after,
     .game-shell .equipment-grid .slot-trinket1:not(.equipped) > span::after,
     .game-shell .equipment-grid .slot-trinket2:not(.equipped) > span::after {
-        font-size: .42rem;
+        font-size: .52rem;
         line-height: 1.05;
     }
 
