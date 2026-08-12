@@ -5,114 +5,242 @@
         box-shadow: inset 0 1px 0 rgba(232, 226, 216, .08), 0 1px 0 #050506;
     }
 
-    .combat-stats-grid {
+    .combat-level-only {
+        min-height: 72px;
+    }
+
+    .combat-level-only span {
+        font-size: .74rem;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .combat-level-only strong {
+        font-size: 2rem;
+    }
+
+    .combat-stance-list {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         gap: .55rem;
     }
 
-    .combat-stat-tile,
-    .osrs-skill-tile {
-        border: 1px solid #665d55;
-        background: linear-gradient(145deg, rgba(87, 58, 42, .28), rgba(17, 16, 18, .95));
-        box-shadow: inset 0 0 0 1px rgba(196, 190, 181, .035), 0 1px 0 #050506;
-    }
-
-    .combat-stat-tile {
-        min-height: 68px;
-        padding: .7rem;
+    .combat-stance-list > button {
+        width: 100%;
         display: flex;
         align-items: center;
-        gap: .65rem;
+        gap: .7rem;
+        padding: .75rem;
+        border: 1px solid #625950;
         border-radius: .3rem;
+        background: linear-gradient(145deg, rgba(81, 55, 40, .22), #121214 72%);
+        color: #c5bfb7;
+        text-align: left;
+        box-shadow: inset 0 1px 0 rgba(230, 224, 215, .035), 0 1px 0 #050506;
     }
 
-    .combat-stat-tile > span {
-        width: 32px;
-        height: 32px;
+    .combat-stance-list > button.active {
+        border-color: #9a765e;
+        background: linear-gradient(145deg, rgba(115, 73, 49, .42), #181315 76%);
+        box-shadow: inset 3px 0 0 #a66f4c, inset 0 1px 0 rgba(230, 224, 215, .06);
+    }
+
+    .combat-stance-icon {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
         display: grid;
         place-items: center;
-        border: 1px solid #81796f;
-        background: #211914;
+        border: 1px solid #777067;
+        border-radius: .25rem;
+        background: #1b1717;
         color: #d0cbc3;
-        border-radius: .22rem;
     }
 
-    .combat-stat-tile div {
+    .combat-stance-list > button.active .combat-stance-icon {
+        border-color: #a47c62;
+        background: #2b1d17;
+    }
+
+    .combat-stance-copy {
         min-width: 0;
         display: flex;
         flex-direction: column;
+        gap: .18rem;
     }
 
-    .combat-stat-tile small {
+    .combat-stance-copy strong {
+        color: #e2dcd3;
+        font-family: ui-serif, Georgia, serif;
+        font-size: .9rem;
+    }
+
+    .combat-stance-copy small {
         color: #969089;
         font-size: .65rem;
-        line-height: 1;
-    }
-
-    .combat-stat-tile strong {
-        margin-top: .15rem;
-        color: #e3ddd4;
-        font-family: ui-serif, Georgia, serif;
-        font-size: 1.35rem;
-        line-height: 1;
-    }
-
-    .osrs-attack-styles button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: .35rem;
+        line-height: 1.4;
     }
 
     .osrs-skill-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .5rem;
+        gap: .42rem;
     }
 
     .osrs-skill-tile {
-        position: relative;
-        min-height: 80px;
-        padding: .65rem .6rem;
-        border-radius: .28rem;
+        min-width: 0;
+        min-height: 66px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: .42rem;
+        padding: .45rem .35rem;
+        border: 1px solid #665d55;
+        border-radius: .26rem;
+        background: linear-gradient(145deg, rgba(87, 58, 42, .28), rgba(17, 16, 18, .97));
+        color: #d9d3cb;
+        box-shadow: inset 0 0 0 1px rgba(196, 190, 181, .035), 0 1px 0 #050506;
+    }
+
+    .osrs-skill-tile:active {
+        transform: translateY(1px);
+        background: linear-gradient(145deg, rgba(111, 70, 47, .38), rgba(20, 16, 17, .98));
     }
 
     .osrs-skill-icon {
-        position: absolute;
-        top: .6rem;
-        left: .55rem;
-        color: #c6c0b8;
+        width: 29px;
+        height: 29px;
+        flex: 0 0 29px;
+        display: grid;
+        place-items: center;
+        color: #c9c3bb;
     }
 
-    .osrs-skill-tile > div {
-        padding-left: 1.7rem;
+    .osrs-skill-tile b {
+        color: #e6e0d7;
+        font-family: ui-serif, Georgia, serif;
+        font-size: .9rem;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .skill-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(0, 0, 0, .72);
+        backdrop-filter: blur(3px);
+    }
+
+    .skill-modal {
+        position: relative;
+        width: min(100%, 380px);
+        padding: 1rem;
+        border: 1px solid #81766d;
+        border-radius: .35rem;
+        background:
+            radial-gradient(circle at top, rgba(105, 69, 48, .24), transparent 44%),
+            linear-gradient(180deg, #1b1717 0%, #101012 100%);
+        color: #d8d2ca;
+        box-shadow: 0 18px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(230,224,215,.07);
+    }
+
+    .skill-modal-close {
+        position: absolute;
+        top: .65rem;
+        right: .65rem;
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #5e5751;
+        border-radius: .25rem;
+        background: #111113;
+        color: #a9a39b;
+    }
+
+    .skill-modal-heading {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding-right: 2.5rem;
+    }
+
+    .skill-modal-heading > span {
+        width: 48px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #867c72;
+        border-radius: .28rem;
+        background: linear-gradient(145deg, #2a1d17, #151315);
+        color: #d2ccc4;
+    }
+
+    .skill-modal-heading div {
         display: flex;
         flex-direction: column;
     }
 
-    .osrs-skill-tile strong {
-        overflow: hidden;
-        color: #aaa49d;
-        font-size: .64rem;
-        font-weight: 600;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .skill-modal-heading small {
+        color: #8e8881;
+        font-size: .62rem;
+        letter-spacing: .12em;
+        text-transform: uppercase;
     }
 
-    .osrs-skill-tile b {
-        color: #e1dbd2;
+    .skill-modal-heading h2 {
+        margin: .08rem 0 0;
+        color: #e6e0d7;
         font-family: ui-serif, Georgia, serif;
-        font-size: 1.45rem;
-        line-height: 1.2;
+        font-size: 1.35rem;
     }
 
-    .osrs-skill-tile small {
-        position: absolute;
-        right: .5rem;
-        bottom: .4rem;
-        color: #817b75;
-        font-size: .55rem;
+    .skill-modal-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .45rem;
+        margin-top: 1rem;
+    }
+
+    .skill-modal-stats > div {
+        min-width: 0;
+        padding: .55rem .45rem;
+        border: 1px solid #574f49;
+        border-radius: .25rem;
+        background: #111113;
+        text-align: center;
+    }
+
+    .skill-modal-stats span {
+        display: block;
+        color: #837d76;
+        font-size: .56rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .skill-modal-stats strong {
+        display: block;
+        margin-top: .18rem;
+        overflow: hidden;
+        color: #ded8cf;
+        font-family: ui-serif, Georgia, serif;
+        font-size: .9rem;
+        text-overflow: ellipsis;
+    }
+
+    .skill-modal > p {
+        margin-top: .9rem;
+        padding-top: .8rem;
+        border-top: 1px solid #49423d;
+        color: #a39d96;
+        font-size: .72rem;
+        line-height: 1.55;
     }
 
     .inventory-view-tabs {
@@ -400,12 +528,5 @@
         margin-top: .65rem;
         color: #827c75;
         font-size: .68rem;
-    }
-
-    @media (max-width: 390px) {
-        .combat-stats-grid,
-        .osrs-skill-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
     }
 }
