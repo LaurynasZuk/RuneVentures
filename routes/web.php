@@ -23,6 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('game/actions/attack/{monster}', [CombatController::class, 'start'])->name('game.attack');
     Route::get('game/combat', [CombatController::class, 'show'])->name('game.combat');
     Route::get('game/combat/state', [CombatController::class, 'state'])->name('game.combat.state');
+    Route::post('game/combat/hit', [CombatController::class, 'hit'])->name('game.combat.hit');
     Route::post('game/combat/leave', [CombatController::class, 'leave'])->name('game.combat.leave');
 });
 
