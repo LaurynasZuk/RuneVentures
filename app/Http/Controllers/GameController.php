@@ -61,11 +61,10 @@ class GameController extends Controller
     public function show(Request $request): Response
     {
         $player = $this->player($request);
-        $this->finishTravelIfReady($player);
+        $this->normalizeTravelCooldown($player);
 
         $player->refresh()->load([
             'location.destinations',
-            'travelDestination',
             'skills',
             'inventory.item',
             'backpacks.item',
@@ -112,10 +111,8 @@ class GameController extends Controller
         });
 
         $travel = null;
-        if ($player->travel_destination_id && $player->travel_ends_at && $player->travelDestination) {
+        if ($this->travelOnCooldown($player)) {
             $travel = [
-                'destinationId' => $player->travelDestination->id,
-                'destinationName' => $player->travelDestination->name,
                 'endsAt' => $player->travel_ends_at->toIso8601String(),
                 'remainingSeconds' => max(
                     0,
@@ -173,7 +170,7 @@ class GameController extends Controller
     public function locationCategory(Request $request, Location $location, string $category): Response
     {
         $player = $this->player($request);
-        $this->finishTravelIfReady($player);
+        $this->normalizeTravelCooldown($player);
         $player->refresh();
 
         abort_unless($player->location_id === $location->id, 403);
@@ -206,11 +203,16 @@ class GameController extends Controller
     public function travel(Request $request, Location $location): RedirectResponse
     {
         $player = $this->player($request);
-        $this->finishTravelIfReady($player);
+        $this->normalizeTravelCooldown($player);
         $player->refresh()->load('location.destinations');
 
-        if ($this->isTraveling($player)) {
-            return back()->with('game', 'Kelionė jau vyksta.');
+        if ($this->travelOnCooldown($player)) {
+            $remaining = max(
+                1,
+                $player->travel_ends_at->getTimestamp() - now()->getTimestamp(),
+            );
+
+            return back()->with('game', "Iki kito perėjimo liko {$remaining} s.");
         }
 
         $destination = $player->location->destinations->firstWhere('id', $location->id);
@@ -219,25 +221,22 @@ class GameController extends Controller
         $travelSeconds = max(1, (int) $destination->pivot->travel_seconds);
 
         $player->update([
-            'travel_destination_id' => $destination->id,
+            'location_id' => $destination->id,
+            'travel_destination_id' => null,
             'travel_ends_at' => now()->addSeconds($travelSeconds),
         ]);
 
         return back()->with(
             'game',
-            "Kelionė į {$destination->name} prasidėjo · {$travelSeconds} s.",
+            "Atvykai į {$destination->name} · kitas perėjimas po {$travelSeconds} s.",
         );
     }
 
     public function chop(Request $request): RedirectResponse
     {
         $player = $this->player($request);
-        $this->finishTravelIfReady($player);
+        $this->normalizeTravelCooldown($player);
         $player->refresh();
-
-        if ($this->isTraveling($player)) {
-            return back()->with('game', 'Veiksmai negalimi kelionės metu.');
-        }
 
         abort_unless(in_array($player->location->slug, ['starter-village'], true), 403);
 
@@ -259,12 +258,8 @@ class GameController extends Controller
     public function attack(Request $request, string $monster): RedirectResponse
     {
         $player = $this->player($request);
-        $this->finishTravelIfReady($player);
+        $this->normalizeTravelCooldown($player);
         $player->refresh();
-
-        if ($this->isTraveling($player)) {
-            return back()->with('game', 'Veiksmai negalimi kelionės metu.');
-        }
 
         $monsterData = collect($this->locationContent($player->location->slug)['monsters'])
             ->firstWhere('slug', $monster);
@@ -439,38 +434,31 @@ class GameController extends Controller
         ];
     }
 
-    private function finishTravelIfReady(Player $player): void
+    private function normalizeTravelCooldown(Player $player): void
     {
-        if (! $player->travel_destination_id || ! $player->travel_ends_at) {
-            return;
+        // Convert any in-progress travel created by the previous delayed-arrival
+        // implementation into the new immediate-arrival model.
+        if ($player->travel_destination_id !== null) {
+            $destinationId = (int) $player->travel_destination_id;
+
+            if (Location::whereKey($destinationId)->exists()) {
+                $player->update([
+                    'location_id' => $destinationId,
+                    'travel_destination_id' => null,
+                ]);
+            } else {
+                $player->update(['travel_destination_id' => null]);
+            }
         }
 
-        if (now()->lt($player->travel_ends_at)) {
-            return;
+        if ($player->travel_ends_at !== null && now()->gte($player->travel_ends_at)) {
+            $player->update(['travel_ends_at' => null]);
         }
-
-        $destinationId = $player->travel_destination_id;
-
-        if (! Location::whereKey($destinationId)->exists()) {
-            $player->update([
-                'travel_destination_id' => null,
-                'travel_ends_at' => null,
-            ]);
-
-            return;
-        }
-
-        $player->update([
-            'location_id' => $destinationId,
-            'travel_destination_id' => null,
-            'travel_ends_at' => null,
-        ]);
     }
 
-    private function isTraveling(Player $player): bool
+    private function travelOnCooldown(Player $player): bool
     {
-        return $player->travel_destination_id !== null
-            && $player->travel_ends_at !== null
+        return $player->travel_ends_at !== null
             && now()->lt($player->travel_ends_at);
     }
 
