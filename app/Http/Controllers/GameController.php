@@ -31,11 +31,41 @@ class GameController extends Controller
         'ring',
     ];
 
+    private const SKILLS = [
+        'attack',
+        'hitpoints',
+        'mining',
+        'strength',
+        'agility',
+        'smithing',
+        'defence',
+        'herblore',
+        'fishing',
+        'ranged',
+        'thieving',
+        'cooking',
+        'prayer',
+        'crafting',
+        'firemaking',
+        'magic',
+        'fletching',
+        'woodcutting',
+        'runecraft',
+        'slayer',
+        'farming',
+        'construction',
+        'hunter',
+        'sailing',
+    ];
+
     public function show(Request $request): Response
     {
         $player = $this->player($request);
-        $player->load([
+        $this->finishTravelIfReady($player);
+
+        $player->refresh()->load([
             'location.destinations',
+            'travelDestination',
             'skills',
             'inventory.item',
             'backpacks.item',
@@ -81,6 +111,19 @@ class GameController extends Controller
             ];
         });
 
+        $travel = null;
+        if ($player->travel_destination_id && $player->travel_ends_at && $player->travelDestination) {
+            $travel = [
+                'destinationId' => $player->travelDestination->id,
+                'destinationName' => $player->travelDestination->name,
+                'endsAt' => $player->travel_ends_at->toIso8601String(),
+                'remainingSeconds' => max(
+                    0,
+                    $player->travel_ends_at->getTimestamp() - now()->getTimestamp(),
+                ),
+            ];
+        }
+
         return Inertia::render('game', [
             'player' => [
                 'name' => $player->name,
@@ -98,14 +141,15 @@ class GameController extends Controller
                 'description' => $player->location->description,
                 'connections' => $player->location->destinations->map(fn (Location $location) => [
                     'id' => $location->id,
-                    'name' => $location->pivot->label,
-                    'travelSeconds' => $location->pivot->travel_seconds,
+                    'name' => $location->name,
+                    'travelSeconds' => (int) $location->pivot->travel_seconds,
                 ])->values(),
             ],
             'worldMap' => [
                 'nodes' => $world['nodes'],
                 'edges' => $world['edges'],
             ],
+            'travel' => $travel,
             'skills' => $player->skills->mapWithKeys(fn (PlayerSkill $skill) => [$skill->skill => [
                 'xp' => $skill->xp,
                 'level' => $this->levelForXp($skill->xp, $skill->skill === 'hitpoints' ? 10 : 1),
@@ -129,6 +173,9 @@ class GameController extends Controller
     public function locationCategory(Request $request, Location $location, string $category): Response
     {
         $player = $this->player($request);
+        $this->finishTravelIfReady($player);
+        $player->refresh();
+
         abort_unless($player->location_id === $location->id, 403);
 
         $labels = [
@@ -159,16 +206,39 @@ class GameController extends Controller
     public function travel(Request $request, Location $location): RedirectResponse
     {
         $player = $this->player($request);
-        abort_unless($player->location->destinations()->whereKey($location->id)->exists(), 403);
+        $this->finishTravelIfReady($player);
+        $player->refresh()->load('location.destinations');
 
-        $player->update(['location_id' => $location->id]);
+        if ($this->isTraveling($player)) {
+            return back()->with('game', 'Kelionė jau vyksta.');
+        }
 
-        return back()->with('game', "Atvykai į {$location->name}.");
+        $destination = $player->location->destinations->firstWhere('id', $location->id);
+        abort_unless($destination, 403);
+
+        $travelSeconds = max(1, (int) $destination->pivot->travel_seconds);
+
+        $player->update([
+            'travel_destination_id' => $destination->id,
+            'travel_ends_at' => now()->addSeconds($travelSeconds),
+        ]);
+
+        return back()->with(
+            'game',
+            "Kelionė į {$destination->name} prasidėjo · {$travelSeconds} s.",
+        );
     }
 
     public function chop(Request $request): RedirectResponse
     {
         $player = $this->player($request);
+        $this->finishTravelIfReady($player);
+        $player->refresh();
+
+        if ($this->isTraveling($player)) {
+            return back()->with('game', 'Veiksmai negalimi kelionės metu.');
+        }
+
         abort_unless(in_array($player->location->slug, ['starter-village'], true), 403);
 
         $added = DB::transaction(function () use ($player) {
@@ -189,6 +259,13 @@ class GameController extends Controller
     public function attack(Request $request, string $monster): RedirectResponse
     {
         $player = $this->player($request);
+        $this->finishTravelIfReady($player);
+        $player->refresh();
+
+        if ($this->isTraveling($player)) {
+            return back()->with('game', 'Veiksmai negalimi kelionės metu.');
+        }
+
         $monsterData = collect($this->locationContent($player->location->slug)['monsters'])
             ->firstWhere('slug', $monster);
 
@@ -234,7 +311,7 @@ class GameController extends Controller
             ],
         );
 
-        foreach (['attack', 'strength', 'defence', 'hitpoints', 'ranged', 'magic', 'prayer', 'woodcutting', 'mining', 'fishing', 'cooking'] as $skill) {
+        foreach (self::SKILLS as $skill) {
             PlayerSkill::firstOrCreate(
                 ['player_id' => $player->id, 'skill' => $skill],
                 ['xp' => 0],
@@ -260,61 +337,141 @@ class GameController extends Controller
 
     private function ensureWorld(): Location
     {
-        $start = Location::firstOrCreate(
+        $lumbridge = Location::updateOrCreate(
             ['slug' => 'starter-village'],
             [
-                'name' => 'Aldor Village',
-                'description' => 'Pradinė vietovė prie senojo kelio į pajūrį.',
-                'region' => 'Vakarinis kraštas',
+                'name' => 'Lumbridge',
+                'description' => 'Pagrindinė pradinė vietovė ir kelių sankirta.',
+                'region' => 'Central lands',
             ],
         );
 
-        $port = Location::firstOrCreate(
+        $eastPort = Location::updateOrCreate(
             ['slug' => 'port'],
             [
-                'name' => 'Uostas',
-                'description' => 'Pakrantės miestas, kuriame susitinka keliautojai, prekeiviai ir jūrininkai.',
-                'region' => 'Vakarinis kraštas',
+                'name' => 'East Port',
+                'description' => 'Rytinis uostas prie pakrantės prekybos kelio.',
+                'region' => 'Eastern coast',
             ],
         );
 
-        $start->destinations()->sync([
-            $port->id => ['label' => 'Uostas', 'travel_seconds' => 4],
+        $northEastPlains = Location::updateOrCreate(
+            ['slug' => 'north-east-plains'],
+            [
+                'name' => 'North East Plains',
+                'description' => 'Atviros lygumos į šiaurės rytus nuo Lumbridge.',
+                'region' => 'North eastern lands',
+            ],
+        );
+
+        $southWestSwamp = Location::updateOrCreate(
+            ['slug' => 'south-west-swamp'],
+            [
+                'name' => 'South West Swamp',
+                'description' => 'Drėgna pelkė pietvakarių keliuose.',
+                'region' => 'South western lands',
+            ],
+        );
+
+        $lumbridge->destinations()->sync([
+            $eastPort->id => ['label' => $eastPort->name, 'travel_seconds' => 5],
+            $northEastPlains->id => ['label' => $northEastPlains->name, 'travel_seconds' => 6],
+            $southWestSwamp->id => ['label' => $southWestSwamp->name, 'travel_seconds' => 5],
         ]);
 
-        $port->destinations()->sync([
-            $start->id => ['label' => 'Aldor Village', 'travel_seconds' => 4],
+        $eastPort->destinations()->sync([
+            $lumbridge->id => ['label' => $lumbridge->name, 'travel_seconds' => 5],
+            $northEastPlains->id => ['label' => $northEastPlains->name, 'travel_seconds' => 4],
         ]);
 
-        return $start;
+        $northEastPlains->destinations()->sync([
+            $lumbridge->id => ['label' => $lumbridge->name, 'travel_seconds' => 6],
+            $eastPort->id => ['label' => $eastPort->name, 'travel_seconds' => 4],
+            $southWestSwamp->id => ['label' => $southWestSwamp->name, 'travel_seconds' => 7],
+        ]);
+
+        $southWestSwamp->destinations()->sync([
+            $lumbridge->id => ['label' => $lumbridge->name, 'travel_seconds' => 5],
+            $northEastPlains->id => ['label' => $northEastPlains->name, 'travel_seconds' => 7],
+        ]);
+
+        return $lumbridge;
     }
 
     private function worldMap(): array
     {
-        $start = Location::where('slug', 'starter-village')->firstOrFail();
-        $port = Location::where('slug', 'port')->firstOrFail();
+        $locations = Location::whereIn('slug', [
+            'starter-village',
+            'port',
+            'north-east-plains',
+            'south-west-swamp',
+        ])->get()->keyBy('slug');
+
+        $lumbridge = $locations->get('starter-village');
+        $eastPort = $locations->get('port');
+        $northEastPlains = $locations->get('north-east-plains');
+        $southWestSwamp = $locations->get('south-west-swamp');
+
+        $nodes = [
+            ['id' => $lumbridge->id, 'name' => $lumbridge->name, 'x' => 170, 'y' => 155],
+            ['id' => $eastPort->id, 'name' => $eastPort->name, 'x' => 525, 'y' => 155],
+            ['id' => $northEastPlains->id, 'name' => $northEastPlains->name, 'x' => 425, 'y' => 345],
+            ['id' => $southWestSwamp->id, 'name' => $southWestSwamp->name, 'x' => 165, 'y' => 515],
+        ];
+
+        $ids = collect($nodes)->pluck('id')->all();
+        $edges = DB::table('location_connections')
+            ->whereIn('location_id', $ids)
+            ->whereIn('destination_id', $ids)
+            ->get()
+            ->map(function ($connection) {
+                $from = min((int) $connection->location_id, (int) $connection->destination_id);
+                $to = max((int) $connection->location_id, (int) $connection->destination_id);
+
+                return ['from' => $from, 'to' => $to];
+            })
+            ->unique(fn (array $edge) => $edge['from'].'-'.$edge['to'])
+            ->values();
 
         return [
-            'nodes' => [
-                [
-                    'id' => $start->id,
-                    'name' => $start->name,
-                    'type' => 'Vietovė',
-                    'x' => 170,
-                    'y' => 150,
-                ],
-                [
-                    'id' => $port->id,
-                    'name' => $port->name,
-                    'type' => 'Miestas',
-                    'x' => 540,
-                    'y' => 150,
-                ],
-            ],
-            'edges' => [
-                ['from' => $start->id, 'to' => $port->id],
-            ],
+            'nodes' => $nodes,
+            'edges' => $edges,
         ];
+    }
+
+    private function finishTravelIfReady(Player $player): void
+    {
+        if (! $player->travel_destination_id || ! $player->travel_ends_at) {
+            return;
+        }
+
+        if (now()->lt($player->travel_ends_at)) {
+            return;
+        }
+
+        $destinationId = $player->travel_destination_id;
+
+        if (! Location::whereKey($destinationId)->exists()) {
+            $player->update([
+                'travel_destination_id' => null,
+                'travel_ends_at' => null,
+            ]);
+
+            return;
+        }
+
+        $player->update([
+            'location_id' => $destinationId,
+            'travel_destination_id' => null,
+            'travel_ends_at' => null,
+        ]);
+    }
+
+    private function isTraveling(Player $player): bool
+    {
+        return $player->travel_destination_id !== null
+            && $player->travel_ends_at !== null
+            && now()->lt($player->travel_ends_at);
     }
 
     private function grantXp(Player $player, string $skill, int $amount): void
@@ -476,12 +633,40 @@ class GameController extends Controller
                     ['name' => 'Uosto žiurkė', 'slug' => 'port-rat', 'level' => 2, 'xp' => 12],
                 ],
             ],
+            'north-east-plains' => [
+                'objects' => [
+                    ['name' => 'Kelio ženklas', 'detail' => 'Senas ženklas lygumų sankryžoje.'],
+                ],
+                'npcs' => [
+                    ['name' => 'Keliautojas', 'detail' => 'Poilsiauja prie kelio.'],
+                ],
+                'resources' => [
+                    ['name' => 'Laukinės žolelės', 'detail' => 'Auga atvirose lygumose.'],
+                ],
+                'monsters' => [
+                    ['name' => 'Lygumų vilkas', 'slug' => 'plains-wolf', 'level' => 3, 'xp' => 18],
+                ],
+            ],
+            'south-west-swamp' => [
+                'objects' => [
+                    ['name' => 'Senas lieptas', 'detail' => 'Pelkėje pūvantis medinis lieptas.'],
+                ],
+                'npcs' => [
+                    ['name' => 'Pelkės atsiskyrėlis', 'detail' => 'Gyvena prie sausos salelės.'],
+                ],
+                'resources' => [
+                    ['name' => 'Pelkės augalas', 'detail' => 'Auga sekliame vandenyje.'],
+                ],
+                'monsters' => [
+                    ['name' => 'Pelkės žiurkė', 'slug' => 'swamp-rat', 'level' => 3, 'xp' => 16],
+                ],
+            ],
             default => [
                 'objects' => [
                     ['name' => 'Senas šulinys', 'detail' => 'Akmeninis šulinys prie pagrindinio kelio.'],
                 ],
                 'npcs' => [
-                    ['name' => 'Kelio sargas', 'detail' => 'Stebi kelią į Uostą.'],
+                    ['name' => 'Kelio sargas', 'detail' => 'Stebi pagrindinius kelius.'],
                 ],
                 'resources' => [
                     ['name' => 'Medis', 'action' => 'chop', 'requiredLevel' => 1],
