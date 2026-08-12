@@ -128,70 +128,120 @@
 }
 
 @layer components {
-    .game-shell { @apply mx-auto min-h-screen max-w-2xl bg-[#101713] pb-24 text-[#e8eadf]; background-image: radial-gradient(circle at top, #233328 0, #101713 26rem); }
-    .player-bar { @apply sticky top-0 z-20 flex items-center gap-3 border-b border-white/10 bg-[#111914]/95 px-4 py-3 backdrop-blur; }
-    .avatar { @apply grid size-10 place-items-center rounded-full border border-[#c6a866]/40 bg-[#29382c] text-[#dbc17d]; }
+    .game-shell {
+        @apply mx-auto min-h-screen max-w-2xl bg-[#0b0b0d] pb-24 text-[#ddd9d2];
+        background-image:
+            radial-gradient(circle at top, rgba(91, 61, 42, 0.22) 0, rgba(11, 11, 13, 0) 24rem),
+            linear-gradient(180deg, #111113 0%, #0b0b0d 56%, #08080a 100%);
+    }
+
+    .player-bar {
+        @apply sticky top-0 z-20 flex items-center gap-3 border-b border-[#665f57] bg-[#111113]/95 px-4 py-3 backdrop-blur;
+        box-shadow: 0 2px 0 #080809, inset 0 -1px 0 rgba(191, 187, 178, 0.12);
+    }
+    .avatar {
+        @apply grid size-10 place-items-center rounded-md border border-[#8f8980] bg-[#241b16] text-[#d0cbc2];
+        box-shadow: inset 0 0 0 1px #3d3028, inset 0 1px 0 rgba(255,255,255,.08);
+    }
     .player-copy { @apply flex min-w-0 flex-1 flex-col; }
-    .player-copy strong { @apply truncate font-serif text-base; }
-    .player-copy span { @apply text-[11px] uppercase tracking-wider text-[#8e9a90]; }
-    .vitals { @apply w-28 text-right text-[11px] text-[#b8c0b7]; }
-    .vitals div { @apply mt-1 h-1.5 overflow-hidden rounded-full bg-black/40; }
-    .vitals i { @apply block h-full bg-[#9d3f36]; }
+    .player-copy strong { @apply truncate font-serif text-base text-[#e6e1d8]; }
+    .player-copy span { @apply text-[11px] uppercase tracking-wider text-[#918b83]; }
+    .vitals { @apply w-28 text-right text-[11px] text-[#bbb6ae]; }
+    .vitals div { @apply mt-1 h-1.5 overflow-hidden rounded-sm border border-[#49443f] bg-[#070708]; }
+    .vitals i { @apply block h-full bg-[#8f332f]; }
 
     .game-shell main { @apply px-4 py-5; }
-    .game-toast { @apply mb-4 rounded-lg border border-[#b99d5a]/30 bg-[#b99d5a]/10 px-4 py-3 text-sm text-[#ead79d]; }
-    .location-hero { @apply mb-7 border-l-2 border-[#c2a35e] py-2 pl-4; }
-    .eyebrow { @apply mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.22em] text-[#b99d64]; }
-    .location-hero h1, .panel h1 { @apply font-serif text-3xl font-semibold tracking-wide text-[#f3edda]; }
-    .location-hero p { @apply mt-2 max-w-lg text-sm leading-6 text-[#aeb7ae]; }
+    .game-toast { @apply mb-4 rounded-md border border-[#73513b] bg-[#231813] px-4 py-3 text-sm text-[#d7c2ad]; }
+    .location-hero { @apply mb-7 border-l-2 border-[#8a5d3d] py-2 pl-4; }
+    .eyebrow { @apply mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.22em] text-[#a67a5a]; }
+    .location-hero h1, .panel h1 { @apply font-serif text-3xl font-semibold tracking-wide text-[#e8e3db]; }
+    .location-hero p { @apply mt-2 max-w-lg text-sm leading-6 text-[#aaa59e]; }
 
     .game-section { @apply mb-7; }
-    .game-section h2 { @apply mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.18em] text-[#bec6bc]; }
-    .game-section h2 span { @apply ml-auto rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-[#7f8c81]; }
-    .action-list { @apply overflow-hidden rounded-xl border border-white/8 bg-[#172019]/85; }
-    .action-list button { @apply flex w-full items-center justify-between border-b border-white/6 px-4 py-3 text-left transition last:border-0 hover:bg-[#253128]; }
+    .game-section h2 { @apply mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.18em] text-[#c1bdb6]; }
+    .game-section h2 svg { @apply text-[#a8a39b]; }
+    .game-section h2 span { @apply ml-auto rounded-sm border border-[#514a44] bg-[#161416] px-2 py-0.5 text-[10px] text-[#96918a]; }
+    .action-list {
+        @apply overflow-hidden rounded-md border border-[#5f554d] bg-[#151315];
+        box-shadow: 0 1px 0 #050506, inset 0 1px 0 rgba(255,255,255,.035);
+    }
+    .action-list button {
+        @apply flex w-full items-center justify-between border-b border-[#3d3732] px-4 py-3 text-left text-[#d5d1ca] transition last:border-0 hover:bg-[#261c17];
+        background-image: linear-gradient(180deg, rgba(59, 42, 32, 0.20), rgba(20, 18, 19, 0.08));
+    }
+    .action-list button:active { @apply bg-[#302119]; }
     .action-list button > span { @apply flex flex-col text-sm font-medium; }
-    .action-list small { @apply mt-0.5 text-xs font-normal text-[#7f8c81]; }
-    .action-list svg { @apply text-[#756d50]; }
+    .action-list small { @apply mt-0.5 text-xs font-normal text-[#8f8a83]; }
+    .action-list svg { @apply text-[#aaa49a]; }
 
-    .bottom-nav { @apply fixed right-0 bottom-0 left-0 z-30 mx-auto flex max-w-2xl border-t border-white/10 bg-[#101612]/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur; }
-    .bottom-nav button { @apply flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] text-[#737f75]; }
-    .bottom-nav svg { @apply size-5; }
-    .bottom-nav button.active { @apply text-[#d8bd79]; }
+    .bottom-nav {
+        @apply fixed right-0 bottom-0 left-0 z-30 mx-auto flex max-w-2xl border-t border-[#746c63] bg-[#0e0e10]/97 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur;
+        box-shadow: 0 -2px 0 #080809, inset 0 1px 0 rgba(214, 208, 198, .08);
+    }
+    .bottom-nav button { @apply relative flex min-w-0 flex-1 flex-col items-center gap-1 border-x border-transparent py-3 text-[10px] text-[#8c8882] transition; }
+    .bottom-nav svg { @apply size-5 text-[#aaa59d]; }
+    .bottom-nav button.active {
+        @apply border-x-[#4a3a30] bg-[#231a16] text-[#e0dad1];
+        box-shadow: inset 0 2px 0 #8a5d3d;
+    }
+    .bottom-nav button.active svg { @apply text-[#d1cbc2]; }
 
     .panel { @apply min-h-[70vh] pt-3; }
     .panel h1 { @apply mb-6; }
-    .panel h3 { @apply mt-8 mb-3 text-xs uppercase tracking-widest text-[#919b91]; }
-    .back-to-world { @apply mb-2 text-[11px] font-semibold uppercase tracking-[.22em] text-[#b99d64]; }
-    .combat-level-card { @apply mb-4 flex items-center justify-between rounded-xl border border-[#c0a45e]/20 bg-[#1a241c] px-4 py-3; }
-    .combat-level-card span { @apply text-sm text-[#9ca69c]; }
-    .combat-level-card strong { @apply font-serif text-2xl text-[#dfc782]; }
+    .panel h3 { @apply mt-8 mb-3 text-xs uppercase tracking-widest text-[#9d9890]; }
+    .back-to-world { @apply mb-2 text-[11px] font-semibold uppercase tracking-[.22em] text-[#a47150]; }
+    .combat-level-card {
+        @apply mb-4 flex items-center justify-between rounded-md border border-[#66584d] bg-[#181416] px-4 py-3;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .combat-level-card span { @apply text-sm text-[#a39e97]; }
+    .combat-level-card strong { @apply font-serif text-2xl text-[#d3cdc4]; }
 
     .stats-grid { @apply grid grid-cols-2 gap-3; }
-    .stats-grid > div { @apply flex items-center justify-between rounded-xl border border-white/8 bg-[#18211a] p-4; }
-    .stats-grid span { @apply capitalize text-sm text-[#9ca69c]; }
-    .stats-grid b { @apply font-serif text-2xl text-[#dfc782]; }
+    .stats-grid > div {
+        @apply flex items-center justify-between rounded-md border border-[#5c534c] bg-[#151315] p-4;
+        background-image: linear-gradient(180deg, rgba(64, 45, 35, .18), rgba(18,17,18,.05));
+    }
+    .stats-grid span { @apply capitalize text-sm text-[#9d9892]; }
+    .stats-grid b { @apply font-serif text-2xl text-[#d4cec5]; }
     .choice-row { @apply grid grid-cols-3 gap-2; }
-    .choice-row button { @apply rounded-lg border border-white/10 bg-[#1b251e] px-2 py-3 text-xs hover:border-[#c0a45e]/50; }
+    .choice-row button {
+        @apply rounded-md border border-[#62564d] bg-[#181416] px-2 py-3 text-xs text-[#cbc6bf] transition hover:border-[#968e84] hover:bg-[#251b17];
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    }
 
-    .skill-list { @apply overflow-hidden rounded-xl border border-white/8; }
-    .skill-row { @apply grid grid-cols-[1fr_2rem_5rem] items-center border-b border-white/6 bg-[#172019] px-4 py-3 last:border-0; }
-    .skill-row span { @apply capitalize; }
-    .skill-row b { @apply text-[#dec47d]; }
-    .skill-row small { @apply text-right text-[#788479]; }
+    .skill-list { @apply overflow-hidden rounded-md border border-[#5e554e]; }
+    .skill-row { @apply grid grid-cols-[1fr_2rem_5rem] items-center border-b border-[#3d3833] bg-[#151315] px-4 py-3 last:border-0; }
+    .skill-row:nth-child(even) { @apply bg-[#191516]; }
+    .skill-row span { @apply capitalize text-[#c8c4bd]; }
+    .skill-row b { @apply text-[#d0cac2]; }
+    .skill-row small { @apply text-right text-[#88837d]; }
 
     .inventory-grid { @apply grid grid-cols-4 gap-2; }
-    .item-slot { @apply relative aspect-square rounded-lg border border-white/7 bg-black/15; }
-    .item-slot.filled { @apply flex flex-col items-center justify-center gap-1 border-[#bca15d]/30 bg-[#252d22] text-[#d7bd77]; }
-    .item-slot span { @apply text-[9px] text-[#b6beb3]; }
-    .item-slot .item-glyph { @apply text-xl text-[#d7bd77]; }
-    .item-slot b { @apply absolute right-1.5 bottom-1 text-xs; }
+    .item-slot {
+        @apply relative aspect-square rounded-md border border-[#4e4944] bg-[#0d0d0f];
+        box-shadow: inset 0 0 0 1px #171719;
+    }
+    .item-slot.filled {
+        @apply flex flex-col items-center justify-center gap-1 border-[#76685d] bg-[#201713] text-[#d6d0c7];
+        background-image: linear-gradient(145deg, rgba(105, 70, 47, .28), rgba(25, 19, 17, .1));
+    }
+    .item-slot span { @apply text-[9px] text-[#aaa59e]; }
+    .item-slot .item-glyph { @apply text-xl text-[#c9c3ba]; }
+    .item-slot b { @apply absolute right-1.5 bottom-1 text-xs text-[#e1dcd4]; }
 
     .prayer-list { @apply space-y-2; }
-    .prayer-list button { @apply flex w-full items-center gap-3 rounded-xl border border-white/8 bg-[#18211a] p-4 text-left text-[#a9b1a8]; }
-    .prayer-list small { @apply ml-auto text-[#657066]; }
+    .prayer-list button {
+        @apply flex w-full items-center gap-3 rounded-md border border-[#5c534c] bg-[#151315] p-4 text-left text-[#b8b3ac];
+        background-image: linear-gradient(180deg, rgba(61, 43, 34, .14), rgba(16,15,16,.04));
+    }
+    .prayer-list button svg { @apply text-[#aaa49c]; }
+    .prayer-list small { @apply ml-auto text-[#7f7a74]; }
 
-    .settings-list { @apply overflow-hidden rounded-xl border border-white/8 bg-[#172019]; }
-    .settings-list button { @apply flex w-full items-center justify-between border-b border-white/6 px-4 py-4 text-left text-sm last:border-0 hover:bg-[#253128]; }
-    .settings-list svg { @apply text-[#756d50]; }
+    .settings-list {
+        @apply overflow-hidden rounded-md border border-[#5e554e] bg-[#151315];
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    }
+    .settings-list button { @apply flex w-full items-center justify-between border-b border-[#3d3833] px-4 py-4 text-left text-sm text-[#ccc7c0] transition last:border-0 hover:bg-[#261c17]; }
+    .settings-list svg { @apply text-[#aaa49a]; }
 }
