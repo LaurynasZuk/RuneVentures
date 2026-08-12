@@ -4,19 +4,37 @@ import {
     Box,
     ChevronRight,
     Cog,
+    CookingPot,
     Crosshair,
+    Dumbbell,
+    Feather,
+    Fish,
+    Flame,
+    FlaskConical,
+    Footprints,
+    Gem,
+    Hammer,
+    Hand,
     Heart,
+    House,
     Landmark,
     LockKeyhole,
     MapPin,
+    Orbit,
     Package,
+    PawPrint,
+    Pickaxe,
+    Sailboat,
     Shield,
+    Skull,
     Sparkles,
+    Sprout,
     Swords,
     TreePine,
     UserRound,
     Users,
     WandSparkles,
+    X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 
@@ -71,27 +89,68 @@ interface Props {
 }
 
 const skillNames = [
-    'attack',
-    'strength',
-    'defence',
-    'hitpoints',
-    'ranged',
-    'magic',
-    'prayer',
-    'woodcutting',
-    'mining',
-    'fishing',
-    'cooking',
+    'attack', 'hitpoints', 'mining',
+    'strength', 'agility', 'smithing',
+    'defence', 'herblore', 'fishing',
+    'ranged', 'thieving', 'cooking',
+    'prayer', 'crafting', 'firemaking',
+    'magic', 'fletching', 'woodcutting',
+    'runecraft', 'slayer', 'farming',
+    'construction', 'hunter', 'sailing',
 ];
 
-const combatSkillNames = [
-    'attack',
-    'strength',
-    'defence',
-    'hitpoints',
-    'ranged',
-    'magic',
-    'prayer',
+const skillDescriptions: Record<string, string> = {
+    attack: 'Didina artimos kovos smūgių tikslumą ir leidžia naudoti aukštesnio lygio ginklus.',
+    hitpoints: 'Nustato, kiek žalos veikėjas gali atlaikyti prieš pralaimėdamas kovą.',
+    mining: 'Leidžia kasti rūdą, akmenis ir kitus mineralinius resursus.',
+    strength: 'Didina artimos kovos žalą ir maksimalų smūgį.',
+    agility: 'Skirta judėjimui, kliūtims, trumpesniems keliams ir mobilumui.',
+    smithing: 'Leidžia lydyti metalą ir gaminti metalinius ginklus bei šarvus.',
+    defence: 'Didina gynybines galimybes ir leidžia naudoti stipresnius šarvus.',
+    herblore: 'Leidžia apdoroti žoleles ir gaminti įvairius eliksyrus.',
+    fishing: 'Leidžia gaudyti žuvis ir kitus vandens resursus.',
+    ranged: 'Valdo nuotolinės kovos tikslumą ir aukštesnio lygio ranged įrangą.',
+    thieving: 'Leidžia vogti iš personažų, skrynių ir kitų objektų.',
+    cooking: 'Leidžia gaminti maistą ir kitus vartojamus patiekalus.',
+    prayer: 'Kiekvienas Prayer lygis suteikia 100 Prayer Mana.',
+    crafting: 'Leidžia gaminti papuošalus, odos gaminius ir kitus daiktus.',
+    firemaking: 'Leidžia kurti ir naudoti skirtingo lygio laužus bei ugnį.',
+    magic: 'Valdo magijos burtus, jų tikslumą ir aukštesnio lygio magišką įrangą.',
+    fletching: 'Leidžia gaminti lankus, strėles ir kitą nuotolinės kovos amuniciją.',
+    woodcutting: 'Leidžia kirsti medžius ir gauti skirtingos rūšies medieną.',
+    runecraft: 'Leidžia kurti runas, naudojamas magijai ir kitoms sistemoms.',
+    slayer: 'Leidžia kovoti su specialiais monstrais ir vykdyti Slayer užduotis.',
+    farming: 'Leidžia auginti žoleles, augalus ir kitus ūkininkavimo resursus.',
+    construction: 'Leidžia statyti ir tobulinti žaidėjo pastatus bei infrastruktūrą.',
+    hunter: 'Leidžia sekti, gaudyti ir medžioti laukinius padarus.',
+    sailing: 'Leidžia valdyti laivus, keliauti jūra ir vykdyti veiklas vandenyne.',
+};
+
+const combatStances = [
+    {
+        key: 'accurate',
+        name: 'Accurate',
+        icon: Crosshair,
+        description: '+3 Attack. Didesnis melee tikslumas; kovos XP skiriamas Attack.',
+    },
+    {
+        key: 'aggressive',
+        name: 'Aggressive',
+        icon: Swords,
+        description: '+3 Strength. Didesnis melee smūgio potencialas; kovos XP skiriamas Strength.',
+    },
+    {
+        key: 'defensive',
+        name: 'Defensive',
+        icon: Shield,
+        description: '+3 Defence. Sustiprina gynybinę poziciją; kovos XP skiriamas Defence.',
+    },
+    {
+        key: 'controlled',
+        name: 'Controlled',
+        icon: Dumbbell,
+        description: '+1 Attack, +1 Strength ir +1 Defence. Kovos XP dalijamas tarp šių trijų skillų.',
+    },
 ];
 
 const equipmentLabels: Record<string, string> = {
@@ -129,6 +188,8 @@ export default function Game({
 }: Props) {
     const [tab, setTab] = useState<Tab | null>(null);
     const [inventoryView, setInventoryView] = useState<InventoryView>('items');
+    const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+    const [combatStance, setCombatStance] = useState('accurate');
     const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
     const drag = useRef<{ pointerId: number; x: number; y: number; offsetX: number; offsetY: number } | null>(null);
     const post = (url: string) => router.post(url, {}, { preserveScroll: true });
@@ -286,22 +347,27 @@ export default function Game({
 
                 {tab === 'combat' && (
                     <Panel title="Combat">
-                        <div className="combat-level-card osrs-combat-level">
+                        <div className="combat-level-card osrs-combat-level combat-level-only">
                             <span>Combat level</span>
                             <strong>{player.combatLevel}</strong>
                         </div>
 
-                        <div className="combat-stats-grid">
-                            {combatSkillNames.map((name) => (
-                                <CombatStat key={name} name={name} level={skill(name).level} />
+                        <h3>Combat stance</h3>
+                        <div className="combat-stance-list">
+                            {combatStances.map(({ key, name, icon: Icon, description }) => (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    className={combatStance === key ? 'active' : ''}
+                                    onClick={() => setCombatStance(key)}
+                                >
+                                    <span className="combat-stance-icon"><Icon size={19} /></span>
+                                    <span className="combat-stance-copy">
+                                        <strong>{name}</strong>
+                                        <small>{description}</small>
+                                    </span>
+                                </button>
                             ))}
-                        </div>
-
-                        <h3>Attack style</h3>
-                        <div className="choice-row osrs-attack-styles">
-                            <button><Crosshair size={16} />Accurate</button>
-                            <button><Swords size={16} />Aggressive</button>
-                            <button><Shield size={16} />Defensive</button>
                         </div>
                     </Panel>
                 )}
@@ -309,16 +375,22 @@ export default function Game({
                 {tab === 'skills' && (
                     <Panel title="Stats">
                         <div className="osrs-skill-grid">
-                            {skillNames.map((name) => (
-                                <div className="osrs-skill-tile" key={name}>
-                                    <span className="osrs-skill-icon">{skillIcon(name)}</span>
-                                    <div>
-                                        <strong>{capitalize(name)}</strong>
-                                        <b>{skill(name).level}</b>
-                                    </div>
-                                    <small>{skill(name).xp.toLocaleString()} XP</small>
-                                </div>
-                            ))}
+                            {skillNames.map((name) => {
+                                const data = skill(name);
+
+                                return (
+                                    <button
+                                        className="osrs-skill-tile"
+                                        key={name}
+                                        type="button"
+                                        onClick={() => setSelectedSkill(name)}
+                                        aria-label={`${capitalize(name)} ${data.level}/${data.level}`}
+                                    >
+                                        <span className="osrs-skill-icon">{skillIcon(name, 23)}</span>
+                                        <b>{data.level}/{data.level}</b>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </Panel>
                 )}
@@ -477,6 +549,46 @@ export default function Game({
                 <Nav icon={<Shield />} label="Prayer" active={tab === 'prayer'} onClick={() => setTab('prayer')} />
                 <Nav icon={<Cog />} label="Settings" active={tab === 'settings'} onClick={() => setTab('settings')} />
             </nav>
+
+            {selectedSkill && (
+                <div className="skill-modal-backdrop" onClick={() => setSelectedSkill(null)}>
+                    <section className="skill-modal" onClick={(event) => event.stopPropagation()}>
+                        <button
+                            className="skill-modal-close"
+                            type="button"
+                            onClick={() => setSelectedSkill(null)}
+                            aria-label="Uždaryti"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <div className="skill-modal-heading">
+                            <span>{skillIcon(selectedSkill, 28)}</span>
+                            <div>
+                                <small>Skill</small>
+                                <h2>{capitalize(selectedSkill)}</h2>
+                            </div>
+                        </div>
+
+                        <div className="skill-modal-stats">
+                            <div>
+                                <span>Level</span>
+                                <strong>{skill(selectedSkill).level}/{skill(selectedSkill).level}</strong>
+                            </div>
+                            <div>
+                                <span>XP</span>
+                                <strong>{skill(selectedSkill).xp.toLocaleString()}</strong>
+                            </div>
+                            <div>
+                                <span>Max</span>
+                                <strong>99</strong>
+                            </div>
+                        </div>
+
+                        <p>{skillDescriptions[selectedSkill]}</p>
+                    </section>
+                </div>
+            )}
         </div>
     );
 }
@@ -491,27 +603,32 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
     );
 }
 
-function CombatStat({ name, level }: { name: string; level: number }) {
-    return (
-        <div className="combat-stat-tile">
-            <span>{skillIcon(name)}</span>
-            <div>
-                <small>{capitalize(name)}</small>
-                <strong>{level}</strong>
-            </div>
-        </div>
-    );
-}
-
-function skillIcon(name: string) {
-    if (name === 'hitpoints') return <Heart size={18} />;
-    if (name === 'ranged') return <Crosshair size={18} />;
-    if (name === 'magic') return <WandSparkles size={18} />;
-    if (name === 'prayer') return <Sparkles size={18} />;
-    if (name === 'defence') return <Shield size={18} />;
-    if (name === 'woodcutting') return <TreePine size={18} />;
-    if (name === 'attack' || name === 'strength') return <Swords size={18} />;
-    return <Package size={18} />;
+function skillIcon(name: string, size = 18) {
+    if (name === 'attack') return <Swords size={size} />;
+    if (name === 'hitpoints') return <Heart size={size} />;
+    if (name === 'mining') return <Pickaxe size={size} />;
+    if (name === 'strength') return <Dumbbell size={size} />;
+    if (name === 'agility') return <Footprints size={size} />;
+    if (name === 'smithing') return <Hammer size={size} />;
+    if (name === 'defence') return <Shield size={size} />;
+    if (name === 'herblore') return <FlaskConical size={size} />;
+    if (name === 'fishing') return <Fish size={size} />;
+    if (name === 'ranged') return <Crosshair size={size} />;
+    if (name === 'thieving') return <Hand size={size} />;
+    if (name === 'cooking') return <CookingPot size={size} />;
+    if (name === 'prayer') return <Sparkles size={size} />;
+    if (name === 'crafting') return <Gem size={size} />;
+    if (name === 'firemaking') return <Flame size={size} />;
+    if (name === 'magic') return <WandSparkles size={size} />;
+    if (name === 'fletching') return <Feather size={size} />;
+    if (name === 'woodcutting') return <TreePine size={size} />;
+    if (name === 'runecraft') return <Orbit size={size} />;
+    if (name === 'slayer') return <Skull size={size} />;
+    if (name === 'farming') return <Sprout size={size} />;
+    if (name === 'construction') return <House size={size} />;
+    if (name === 'hunter') return <PawPrint size={size} />;
+    if (name === 'sailing') return <Sailboat size={size} />;
+    return <Package size={size} />;
 }
 
 function itemGlyph(icon: string) {
