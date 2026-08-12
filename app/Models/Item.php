@@ -15,4 +15,13 @@ class Item extends Model
         'equip_slot',
         'inventory_slots_bonus',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'stackable' => 'boolean',
+            'stack_limit' => 'integer',
+            'inventory_slots_bonus' => 'integer',
+        ];
+    }
 }
