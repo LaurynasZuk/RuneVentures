@@ -56,15 +56,21 @@
     transform: translate3d(var(--map-offset-x), var(--map-offset-y), 0) scale(var(--world-map-scale)) !important;
 }
 
-/* node x/y is the exact circle centre */
+/*
+ * node.x/node.y is the exact centre shared by both the SVG line and circle.
+ * Do not scale the node element itself: scaling a translated element also
+ * scales its -50% translation and shifts the visual centre away from x/y.
+ */
 .world-map-node {
-    width: 9rem;
-    height: 2.7rem;
-    scale: 1.2;
+    width: 10.8rem;
+    height: 3.24rem;
+    scale: none;
 }
 
 .world-map-node-name {
-    bottom: calc(100% + .3rem);
+    bottom: calc(100% + .36rem);
+    width: 10.8rem;
+    font-size: .94rem;
 }
 
 .world-map-lines {
@@ -75,11 +81,12 @@
     stroke: #8d8780;
 }
 
-/* Keep the circle fully opaque above the centre-to-centre SVG line. */
 .world-map-dot {
     top: 50%;
     bottom: auto;
     z-index: 2;
+    width: 3.24rem;
+    height: 3.24rem;
     transform: translate(-50%, -50%);
     background: radial-gradient(circle at 35% 30%, #2b292b 0%, #171719 62%, #0b0b0d 100%);
 }
