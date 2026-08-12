@@ -8,7 +8,6 @@ type LocationItem = {
     requiredLevel?: number;
     level?: number;
     slug?: string;
-    xp?: number;
 };
 
 interface Props {
@@ -25,24 +24,9 @@ interface Props {
 }
 
 const coldbreezeStarterMonsters: LocationItem[] = [
-    {
-        name: 'Chicken',
-        slug: 'chicken',
-        level: 1,
-        detail: 'HP 30 · ATK/STR/DEF 1/1/1 · Max hit 0 · 2.4 s',
-    },
-    {
-        name: 'Goblin',
-        slug: 'goblin',
-        level: 2,
-        detail: 'HP 50 · ATK/STR/DEF 1/1/1 · Max hit 10 · 3.6 s',
-    },
-    {
-        name: 'Duck',
-        slug: 'duck',
-        level: 1,
-        detail: 'HP 30 · ATK/STR/DEF 1/1/1 · Max hit 0 · 2.4 s',
-    },
+    { name: 'Chicken', slug: 'chicken', level: 1 },
+    { name: 'Goblin', slug: 'goblin', level: 2 },
+    { name: 'Duck', slug: 'duck', level: 1 },
 ];
 
 export default function LocationCategory({ location, category, items }: Props) {
@@ -76,34 +60,32 @@ export default function LocationCategory({ location, category, items }: Props) {
                     )}
 
                     {displayItems.map((item, index) => {
-                        const content = (
-                            <>
-                                <div>
-                                    <strong>{item.name}</strong>
-                                    {item.detail && <span>{item.detail}</span>}
-                                    {item.requiredLevel && <span>Reikia lygio {item.requiredLevel}</span>}
-                                    {item.level && <span>Combat {item.level}{item.xp ? ` · ${item.xp} XP` : ''}</span>}
-                                </div>
-                                <ChevronRight size={17} />
-                            </>
-                        );
-
                         if (category.key === 'monsters' && item.slug) {
                             return (
-                                <button
-                                    className="location-list-row"
-                                    type="button"
-                                    key={`${item.name}-${index}`}
-                                    onClick={() => router.post(`/game/actions/attack/${item.slug}`)}
-                                >
-                                    {content}
-                                </button>
+                                <div className="location-list-row monster-list-row" key={`${item.name}-${index}`}>
+                                    <div className="monster-list-copy">
+                                        <strong>{item.name}</strong>
+                                        <span>Level {item.level ?? 1}</span>
+                                    </div>
+                                    <button
+                                        className="monster-fight-button"
+                                        type="button"
+                                        onClick={() => router.post(`/game/actions/attack/${item.slug}`)}
+                                    >
+                                        Fight
+                                    </button>
+                                </div>
                             );
                         }
 
                         return (
                             <div className="location-list-row" key={`${item.name}-${index}`}>
-                                {content}
+                                <div>
+                                    <strong>{item.name}</strong>
+                                    {item.detail && <span>{item.detail}</span>}
+                                    {item.requiredLevel && <span>Reikia lygio {item.requiredLevel}</span>}
+                                </div>
+                                <ChevronRight size={17} />
                             </div>
                         );
                     })}
