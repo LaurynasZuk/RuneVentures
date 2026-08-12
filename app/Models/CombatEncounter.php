@@ -28,6 +28,9 @@ class CombatEncounter extends Model
         'monster_next_attack_ms',
         'status',
         'last_event',
+        'combat_log',
+        'loot',
+        'ended_at_ms',
     ];
 
     protected function casts(): array
@@ -46,6 +49,9 @@ class CombatEncounter extends Model
             'monster_defence_roll' => 'integer',
             'player_next_attack_ms' => 'integer',
             'monster_next_attack_ms' => 'integer',
+            'ended_at_ms' => 'integer',
+            'combat_log' => 'array',
+            'loot' => 'array',
         ];
     }
 
