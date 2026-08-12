@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CombatEncounter;
 use App\Models\Player;
+use App\Services\CombatCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,12 +14,22 @@ use Inertia\Response;
 
 class CombatController extends Controller
 {
-    private const TICK_MS = 600;
-
     private const STYLE_DEFAULTS = [
-        'melee' => ['attack_ticks' => 5, 'max_hit' => 2],
-        'ranged' => ['attack_ticks' => 3, 'max_hit' => 1],
-        'magic' => ['attack_ticks' => 7, 'max_hit' => 3],
+        'melee' => [
+            'attack_interval_ms' => 3000,
+            'accuracy_skill' => 'attack',
+            'damage_skill' => 'strength',
+        ],
+        'ranged' => [
+            'attack_interval_ms' => 2000,
+            'accuracy_skill' => 'ranged',
+            'damage_skill' => 'ranged',
+        ],
+        'magic' => [
+            'attack_interval_ms' => 4000,
+            'accuracy_skill' => 'magic',
+            'damage_skill' => 'magic',
+        ],
     ];
 
     private const MONSTERS = [
@@ -26,40 +37,64 @@ class CombatController extends Controller
             'location' => 'starter-village',
             'name' => 'Didžioji žiurkė',
             'level' => 2,
-            'hp' => 6,
-            'attack_ticks' => 4,
-            'max_hit' => 1,
+            'hp' => 60,
+            'attack_level' => 2,
+            'strength_level' => 2,
+            'defence_level' => 2,
+            'attack_bonus' => 0,
+            'strength_bonus' => 0,
+            'defence_bonus' => 0,
+            'attack_interval_ms' => 2400,
         ],
         'port-rat' => [
             'location' => 'port',
             'name' => 'Uosto žiurkė',
             'level' => 2,
-            'hp' => 5,
-            'attack_ticks' => 3,
-            'max_hit' => 1,
+            'hp' => 50,
+            'attack_level' => 2,
+            'strength_level' => 2,
+            'defence_level' => 1,
+            'attack_bonus' => 0,
+            'strength_bonus' => 0,
+            'defence_bonus' => 0,
+            'attack_interval_ms' => 1800,
         ],
         'plains-wolf' => [
             'location' => 'north-east-plains',
             'name' => 'Lygumų vilkas',
             'level' => 3,
-            'hp' => 10,
-            'attack_ticks' => 4,
-            'max_hit' => 2,
+            'hp' => 100,
+            'attack_level' => 3,
+            'strength_level' => 3,
+            'defence_level' => 3,
+            'attack_bonus' => 0,
+            'strength_bonus' => 0,
+            'defence_bonus' => 0,
+            'attack_interval_ms' => 2400,
         ],
         'swamp-rat' => [
             'location' => 'south-west-swamp',
             'name' => 'Pelkės žiurkė',
             'level' => 3,
-            'hp' => 8,
-            'attack_ticks' => 5,
-            'max_hit' => 2,
+            'hp' => 80,
+            'attack_level' => 3,
+            'strength_level' => 3,
+            'defence_level' => 2,
+            'attack_bonus' => 0,
+            'strength_bonus' => 0,
+            'defence_bonus' => 0,
+            'attack_interval_ms' => 3000,
         ],
     ];
+
+    public function __construct(private readonly CombatCalculator $calculator)
+    {
+    }
 
     public function start(Request $request, string $monster): RedirectResponse
     {
         $player = Player::query()
-            ->with(['location', 'equipment.item'])
+            ->with(['location', 'skills', 'equipment.item'])
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
@@ -71,8 +106,33 @@ class CombatController extends Controller
             ? $weapon->combat_style
             : 'melee';
         $defaults = self::STYLE_DEFAULTS[$style];
-        $playerAttackTicks = max(1, (int) ($weapon?->attack_ticks ?? $defaults['attack_ticks']));
-        $playerMaxHit = max(1, (int) ($weapon?->max_hit ?? $defaults['max_hit']));
+        $equipment = $this->equipmentBonuses($player);
+
+        $attackLevel = $this->skillLevel($player, $defaults['accuracy_skill']);
+        $damageLevel = $this->skillLevel($player, $defaults['damage_skill']);
+        $defenceLevel = $this->skillLevel($player, 'defence');
+
+        $playerAttackRoll = $this->calculator->attackRoll($attackLevel, $equipment['attack']);
+        $playerDefenceRoll = $this->calculator->defenceRoll($defenceLevel, $equipment['defence']);
+        $playerMaxHit = $this->calculator->maxHit($damageLevel, $equipment['strength']);
+        $playerAttackIntervalMs = max(
+            250,
+            (int) ($weapon?->attack_interval_ms ?? $defaults['attack_interval_ms']),
+        );
+
+        $monsterAttackRoll = $this->calculator->attackRoll(
+            $monsterData['attack_level'],
+            $monsterData['attack_bonus'],
+        );
+        $monsterDefenceRoll = $this->calculator->defenceRoll(
+            $monsterData['defence_level'],
+            $monsterData['defence_bonus'],
+        );
+        $monsterMaxHit = $this->calculator->maxHit(
+            $monsterData['strength_level'],
+            $monsterData['strength_bonus'],
+        );
+        $monsterAttackIntervalMs = max(250, (int) $monsterData['attack_interval_ms']);
         $nowMs = $this->nowMs();
 
         CombatEncounter::updateOrCreate(
@@ -84,15 +144,17 @@ class CombatController extends Controller
                 'monster_level' => $monsterData['level'],
                 'monster_hp' => $monsterData['hp'],
                 'monster_max_hp' => $monsterData['hp'],
-                'monster_attack_ticks' => $monsterData['attack_ticks'],
-                'monster_max_hit' => $monsterData['max_hit'],
+                'monster_max_hit' => $monsterMaxHit,
                 'player_style' => $style,
-                'player_attack_ticks' => $playerAttackTicks,
                 'player_max_hit' => $playerMaxHit,
-                'player_next_attack_at' => null,
-                'monster_next_attack_at' => null,
+                'player_attack_interval_ms' => $playerAttackIntervalMs,
+                'monster_attack_interval_ms' => $monsterAttackIntervalMs,
+                'player_attack_roll' => $playerAttackRoll,
+                'player_defence_roll' => $playerDefenceRoll,
+                'monster_attack_roll' => $monsterAttackRoll,
+                'monster_defence_roll' => $monsterDefenceRoll,
                 'player_next_attack_ms' => $nowMs,
-                'monster_next_attack_ms' => $nowMs + ($monsterData['attack_ticks'] * self::TICK_MS),
+                'monster_next_attack_ms' => $nowMs + $monsterAttackIntervalMs,
                 'status' => 'active',
                 'last_event' => "Kova su {$monsterData['name']} prasidėjo.",
             ],
@@ -142,8 +204,6 @@ class CombatController extends Controller
             ->where('status', 'active')
             ->update([
                 'status' => 'fled',
-                'player_next_attack_at' => null,
-                'monster_next_attack_at' => null,
                 'player_next_attack_ms' => null,
                 'monster_next_attack_ms' => null,
                 'last_event' => 'Pasitraukei iš kovos.',
@@ -181,7 +241,7 @@ class CombatController extends Controller
             }
 
             if ($locked->monster_next_attack_ms === null) {
-                $locked->monster_next_attack_ms = $nowMs + ($locked->monster_attack_ticks * self::TICK_MS);
+                $locked->monster_next_attack_ms = $nowMs + $locked->monster_attack_interval_ms;
             }
 
             $iterations = 0;
@@ -202,14 +262,19 @@ class CombatController extends Controller
                 );
 
                 if ($playerActsFirst) {
-                    $damage = random_int(0, $locked->player_max_hit);
+                    $hit = $this->calculator->rollHit(
+                        $locked->player_attack_roll,
+                        $locked->monster_defence_roll,
+                    );
+                    $damage = $hit
+                        ? $this->calculator->rollDamage($locked->player_max_hit)
+                        : 0;
+
                     $locked->monster_hp = max(0, $locked->monster_hp - $damage);
-                    $locked->last_event = $damage > 0
+                    $locked->last_event = $hit
                         ? "Pataikei {$damage}."
                         : 'Nepataikei.';
-                    $locked->player_next_attack_ms = $playerAt + (
-                        $locked->player_attack_ticks * self::TICK_MS
-                    );
+                    $locked->player_next_attack_ms = $playerAt + $locked->player_attack_interval_ms;
 
                     if ($locked->monster_hp <= 0) {
                         $locked->status = 'won';
@@ -218,23 +283,29 @@ class CombatController extends Controller
                         $locked->last_event = "Nugalėjai {$locked->monster_name}.";
                     }
                 } else {
-                    $damage = random_int(0, $locked->monster_max_hit);
+                    $hit = $this->calculator->rollHit(
+                        $locked->monster_attack_roll,
+                        $locked->player_defence_roll,
+                    );
+                    $damage = $hit
+                        ? $this->calculator->rollDamage($locked->monster_max_hit)
+                        : 0;
                     $remainingHp = $lockedPlayer->hitpoints - $damage;
 
                     if ($remainingHp <= 0) {
-                        $lockedPlayer->hitpoints = 1;
+                        // Full death/respawn rules will replace this temporary floor.
+                        // 10 HP on the x10 scale equals the previous 1 HP safety floor.
+                        $lockedPlayer->hitpoints = 10;
                         $locked->status = 'lost';
                         $locked->player_next_attack_ms = null;
                         $locked->monster_next_attack_ms = null;
                         $locked->last_event = "{$locked->monster_name} tave nugalėjo.";
                     } else {
                         $lockedPlayer->hitpoints = $remainingHp;
-                        $locked->last_event = $damage > 0
+                        $locked->last_event = $hit
                             ? "{$locked->monster_name} pataikė {$damage}."
                             : "{$locked->monster_name} nepataikė.";
-                        $locked->monster_next_attack_ms = $monsterAt + (
-                            $locked->monster_attack_ticks * self::TICK_MS
-                        );
+                        $locked->monster_next_attack_ms = $monsterAt + $locked->monster_attack_interval_ms;
                     }
 
                     $lockedPlayer->save();
@@ -252,14 +323,21 @@ class CombatController extends Controller
     {
         return [
             'status' => $encounter->status,
-            'tickMs' => self::TICK_MS,
+            'serverNowMs' => $this->nowMs(),
+            'damageScale' => 10,
             'style' => $encounter->player_style,
             'player' => [
                 'hp' => $player->hitpoints,
                 'maxHp' => $player->max_hitpoints,
-                'attackTicks' => $encounter->player_attack_ticks,
-                'attackSeconds' => ($encounter->player_attack_ticks * self::TICK_MS) / 1000,
+                'attackIntervalMs' => $encounter->player_attack_interval_ms,
+                'attackSeconds' => $encounter->player_attack_interval_ms / 1000,
                 'maxHit' => $encounter->player_max_hit,
+                'attackRoll' => $encounter->player_attack_roll,
+                'defenceRoll' => $encounter->player_defence_roll,
+                'hitChance' => $this->calculator->hitChance(
+                    $encounter->player_attack_roll,
+                    $encounter->monster_defence_roll,
+                ),
                 'nextAttackAtMs' => $encounter->player_next_attack_ms,
             ],
             'monster' => [
@@ -268,13 +346,35 @@ class CombatController extends Controller
                 'level' => $encounter->monster_level,
                 'hp' => $encounter->monster_hp,
                 'maxHp' => $encounter->monster_max_hp,
-                'attackTicks' => $encounter->monster_attack_ticks,
-                'attackSeconds' => ($encounter->monster_attack_ticks * self::TICK_MS) / 1000,
+                'attackIntervalMs' => $encounter->monster_attack_interval_ms,
+                'attackSeconds' => $encounter->monster_attack_interval_ms / 1000,
                 'maxHit' => $encounter->monster_max_hit,
+                'attackRoll' => $encounter->monster_attack_roll,
+                'defenceRoll' => $encounter->monster_defence_roll,
+                'hitChance' => $this->calculator->hitChance(
+                    $encounter->monster_attack_roll,
+                    $encounter->player_defence_roll,
+                ),
                 'nextAttackAtMs' => $encounter->monster_next_attack_ms,
             ],
             'lastEvent' => $encounter->last_event,
         ];
+    }
+
+    private function equipmentBonuses(Player $player): array
+    {
+        return [
+            'attack' => $player->equipment->sum(fn ($slot) => (int) ($slot->item?->attack_bonus ?? 0)),
+            'strength' => $player->equipment->sum(fn ($slot) => (int) ($slot->item?->strength_bonus ?? 0)),
+            'defence' => $player->equipment->sum(fn ($slot) => (int) ($slot->item?->defence_bonus ?? 0)),
+        ];
+    }
+
+    private function skillLevel(Player $player, string $skill): int
+    {
+        $row = $player->skills->firstWhere('skill', $skill);
+
+        return $this->calculator->levelForXp((int) ($row?->xp ?? 0));
     }
 
     private function nowMs(): int
