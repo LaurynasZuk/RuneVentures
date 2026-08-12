@@ -29,6 +29,9 @@ class GameController extends Controller
         'hands',
         'feet',
         'ring',
+        'ring2',
+        'trinket1',
+        'trinket2',
     ];
 
     private const SKILLS = [
