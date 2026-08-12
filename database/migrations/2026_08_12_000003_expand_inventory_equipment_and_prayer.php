@@ -23,13 +23,7 @@ return new class extends Migration
 
         Schema::table('inventory_items', function (Blueprint $table) {
             $table->unsignedSmallInteger('slot')->nullable()->after('player_id');
-        });
-
-        DB::statement('ALTER TABLE inventory_items DROP CONSTRAINT IF EXISTS inventory_items_player_id_item_id_unique');
-
-        Schema::table('inventory_items', function (Blueprint $table) {
-            $table->unique(['player_id', 'slot']);
-            $table->index(['player_id', 'item_id']);
+            $table->dropUnique(['player_id', 'item_id']);
         });
 
         $playerIds = DB::table('inventory_items')->select('player_id')->distinct()->pluck('player_id');
@@ -39,6 +33,11 @@ return new class extends Migration
                 DB::table('inventory_items')->where('id', $row->id)->update(['slot' => $slot++]);
             }
         }
+
+        Schema::table('inventory_items', function (Blueprint $table) {
+            $table->unique(['player_id', 'slot']);
+            $table->index(['player_id', 'item_id']);
+        });
 
         Schema::create('player_backpacks', function (Blueprint $table) {
             $table->id();
