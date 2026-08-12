@@ -85,7 +85,7 @@ export default function Combat({ combat: initialCombat }: Props) {
                 <main className="combat-empty">
                     <Swords size={30} />
                     <h1>Nėra aktyvios kovos</h1>
-                    <button type="button" onClick={() => router.visit('/dashboard')}>Grįžti į World</button>
+                    <button type="button" onClick={() => router.visit('/main')}>Grįžti į World</button>
                 </main>
             </div>
         );
@@ -171,7 +171,7 @@ export default function Combat({ combat: initialCombat }: Props) {
                 {combat.status !== 'active' && (
                     <div className={`combat-result ${combat.status}`}>
                         <strong>{combat.status === 'won' ? 'Pergalė' : combat.status === 'lost' ? 'Pralaimėjimas' : 'Kova nutraukta'}</strong>
-                        <button type="button" onClick={() => router.visit('/dashboard')}>Grįžti į World</button>
+                        <button type="button" onClick={() => router.visit('/main')}>Grįžti į World</button>
                     </div>
                 )}
 
