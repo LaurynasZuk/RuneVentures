@@ -37,12 +37,10 @@
     display: none;
 }
 
-/* The location name and description already appear above the map. */
 .location-menu-heading {
     display: none;
 }
 
-/* Compact world overview with player-centered, bounded panning. */
 .world-map-viewport {
     height: 15rem;
 }
@@ -58,11 +56,6 @@
     transform: translate3d(var(--map-offset-x), var(--map-offset-y), 0) scale(var(--world-map-scale)) !important;
 }
 
-/*
- * A node's x/y coordinate is now also the exact center of its circle.
- * SVG connections already use those same x/y values, so every line runs
- * from the center of one location circle to the center of the next one.
- */
 .world-map-node {
     width: 9rem;
     height: 2.7rem;
@@ -77,6 +70,25 @@
     top: 50%;
     bottom: auto;
     transform: translate(-50%, -50%);
+    background: radial-gradient(
+        circle at 35% 30%,
+        rgba(43, 41, 43, .48) 0%,
+        rgba(23, 23, 25, .58) 62%,
+        rgba(11, 11, 13, .72) 100%
+    );
+}
+
+.world-map-node.current .world-map-dot {
+    background: radial-gradient(
+        circle at 35% 30%,
+        rgba(109, 105, 102, .52) 0%,
+        rgba(54, 52, 55, .58) 52%,
+        rgba(23, 23, 25, .7) 100%
+    );
+}
+
+.world-map-lines line {
+    stroke: #8d8780;
 }
 
 @media (max-width: 420px) {
