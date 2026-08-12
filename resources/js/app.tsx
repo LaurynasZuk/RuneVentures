@@ -3,6 +3,7 @@ import '../css/game-map.css';
 import '../css/game-systems.css';
 import '../css/game-home-nav.css';
 import '../css/game-location-title.css';
+import '../css/game-player-bar.css';
 import '../css/combat.css';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { Map } from 'lucide-react';
