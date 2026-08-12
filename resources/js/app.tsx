@@ -33,7 +33,7 @@ function GameHomeNavButton() {
         <button
             className="game-home-nav-button"
             type="button"
-            onClick={() => router.visit('/dashboard', {
+            onClick={() => router.visit('/main', {
                 preserveState: false,
                 preserveScroll: false,
             })}
