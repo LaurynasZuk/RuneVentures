@@ -50,17 +50,38 @@ export default function LocationCategory({ location, category, items }: Props) {
                         <div className="location-list-empty">Šioje vietovėje įrašų dar nėra.</div>
                     )}
 
-                    {items.map((item, index) => (
-                        <div className="location-list-row" key={`${item.name}-${index}`}>
-                            <div>
-                                <strong>{item.name}</strong>
-                                {item.detail && <span>{item.detail}</span>}
-                                {item.requiredLevel && <span>Reikia lygio {item.requiredLevel}</span>}
-                                {item.level && <span>Combat {item.level}{item.xp ? ` · ${item.xp} XP` : ''}</span>}
+                    {items.map((item, index) => {
+                        const content = (
+                            <>
+                                <div>
+                                    <strong>{item.name}</strong>
+                                    {item.detail && <span>{item.detail}</span>}
+                                    {item.requiredLevel && <span>Reikia lygio {item.requiredLevel}</span>}
+                                    {item.level && <span>Combat {item.level}{item.xp ? ` · ${item.xp} XP` : ''}</span>}
+                                </div>
+                                <ChevronRight size={17} />
+                            </>
+                        );
+
+                        if (category.key === 'monsters' && item.slug) {
+                            return (
+                                <button
+                                    className="location-list-row"
+                                    type="button"
+                                    key={`${item.name}-${index}`}
+                                    onClick={() => router.post(`/game/actions/attack/${item.slug}`)}
+                                >
+                                    {content}
+                                </button>
+                            );
+                        }
+
+                        return (
+                            <div className="location-list-row" key={`${item.name}-${index}`}>
+                                {content}
                             </div>
-                            <ChevronRight size={17} />
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </main>
         </div>
