@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { Shield, Swords } from 'lucide-react';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
@@ -9,29 +9,37 @@ export default function AuthSimpleLayout({
     description,
 }: AuthLayoutProps) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
-            <div className="w-full max-w-sm">
-                <div className="flex flex-col gap-8">
-                    <div className="flex flex-col items-center gap-4">
-                        <Link
-                            href={home()}
-                            className="flex flex-col items-center gap-2 font-medium"
-                        >
-                            <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
-                                <AppLogoIcon className="size-9 fill-current text-[var(--foreground)] dark:text-white" />
-                            </div>
-                            <span className="sr-only">{title}</span>
-                        </Link>
+        <div className="rune-auth-shell">
+            <div className="rune-auth-haze" aria-hidden="true" />
 
-                        <div className="space-y-2 text-center">
-                            <h1 className="text-xl font-medium">{title}</h1>
-                            <p className="text-center text-sm text-muted-foreground">
-                                {description}
-                            </p>
-                        </div>
+            <div className="rune-auth-wrap">
+                <Link href={home()} className="rune-auth-brand">
+                    <div className="rune-auth-crest" aria-hidden="true">
+                        <Shield className="rune-auth-shield" />
+                        <Swords className="rune-auth-swords" />
                     </div>
-                    {children}
-                </div>
+                    <div>
+                        <div className="rune-auth-name">RuneVentures</div>
+                        <div className="rune-auth-tagline">A medieval adventure awaits</div>
+                    </div>
+                </Link>
+
+                <section className="rune-auth-panel">
+                    <span className="rune-auth-corner rune-auth-corner-tl" aria-hidden="true" />
+                    <span className="rune-auth-corner rune-auth-corner-tr" aria-hidden="true" />
+                    <span className="rune-auth-corner rune-auth-corner-bl" aria-hidden="true" />
+                    <span className="rune-auth-corner rune-auth-corner-br" aria-hidden="true" />
+
+                    <header className="rune-auth-heading">
+                        <p className="rune-auth-kicker">Adventurer access</p>
+                        <h1>{title}</h1>
+                        {description && <p>{description}</p>}
+                    </header>
+
+                    <div className="rune-auth-content">{children}</div>
+                </section>
+
+                <p className="rune-auth-footer">RuneVentures · Enter the realm</p>
             </div>
         </div>
     );
