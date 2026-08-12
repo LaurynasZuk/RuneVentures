@@ -1,6 +1,4 @@
-.game-shell .bottom-nav {
-    padding-left: calc(16.666667% + .25rem);
-}
+@import './game-desktop.css';
 
 .game-home-nav-button {
     position: fixed;
@@ -49,4 +47,22 @@ body:not(:has(.bottom-nav button.active)) .game-home-nav-button svg {
 
 .game-home-nav-button:active {
     background: #2a1f1a;
+}
+
+/* Prayer is the fifth button in the six-item game navigation. */
+.game-shell .bottom-nav button:nth-child(5) > svg {
+    display: none;
+}
+
+.game-shell .bottom-nav button:nth-child(5)::before {
+    content: '★';
+    display: block;
+    height: 1.25rem;
+    color: #aaa59d;
+    font-size: 1.2rem;
+    line-height: 1.05rem;
+}
+
+.game-shell .bottom-nav button:nth-child(5).active::before {
+    color: #d1cbc2;
 }
