@@ -42,8 +42,6 @@ type Skill = { xp: number; level: number };
 type MapNode = { id: number; name: string; x: number; y: number };
 type MapEdge = { from: number; to: number };
 type TravelState = {
-    destinationId: number;
-    destinationName: string;
     endsAt: string;
     remainingSeconds: number;
 } | null;
@@ -207,6 +205,7 @@ export default function Game({
     const inventoryBySlot = new Map(inventory.map((item) => [item.slot, item]));
     const selectedNode = worldMap.nodes.find((node) => node.id === selectedMapNode) ?? null;
     const selectedConnection = location.connections.find((connection) => connection.id === selectedMapNode) ?? null;
+    const travelOnCooldown = travelRemaining > 0;
 
     useEffect(() => {
         if (!travel) {
@@ -214,7 +213,6 @@ export default function Game({
             return;
         }
 
-        setSelectedMapNode(null);
         let timer: number | undefined;
 
         const updateCountdown = () => {
@@ -225,9 +223,8 @@ export default function Game({
 
             setTravelRemaining(remaining);
 
-            if (remaining <= 0) {
-                if (timer !== undefined) window.clearInterval(timer);
-                router.reload();
+            if (remaining <= 0 && timer !== undefined) {
+                window.clearInterval(timer);
             }
         };
 
@@ -338,7 +335,6 @@ export default function Game({
                                         const isCurrent = node.id === location.id;
                                         const isReachable = connectedIds.has(node.id);
                                         const isSelected = node.id === selectedMapNode;
-                                        const isDestination = travel?.destinationId === node.id;
 
                                         return (
                                             <button
@@ -349,12 +345,11 @@ export default function Game({
                                                     isCurrent ? 'current' : '',
                                                     isReachable ? 'reachable' : '',
                                                     isSelected ? 'selected' : '',
-                                                    isDestination ? 'traveling' : '',
                                                 ].filter(Boolean).join(' ')}
                                                 style={{ left: node.x, top: node.y }}
                                                 onPointerDown={(event) => event.stopPropagation()}
                                                 onClick={() => {
-                                                    if (!travel && !isCurrent) setSelectedMapNode(node.id);
+                                                    if (!isCurrent) setSelectedMapNode(node.id);
                                                 }}
                                                 aria-current={isCurrent ? 'location' : undefined}
                                             >
@@ -366,17 +361,7 @@ export default function Game({
                                 </div>
                             </div>
 
-                            {travel ? (
-                                <div className="travel-action-panel traveling">
-                                    <div>
-                                        <span>Kelionė į</span>
-                                        <strong>{travel.destinationName}</strong>
-                                    </div>
-                                    <button type="button" disabled>
-                                        {travelRemaining > 0 ? `${travelRemaining} s` : 'Atvykstama...'}
-                                    </button>
-                                </div>
-                            ) : selectedNode ? (
+                            {selectedNode ? (
                                 <div className="travel-action-panel">
                                     <div>
                                         <span>Pasirinkta vietovė</span>
@@ -384,14 +369,28 @@ export default function Game({
                                     </div>
                                     <button
                                         type="button"
-                                        disabled={!selectedConnection}
+                                        disabled={!selectedConnection || travelOnCooldown}
                                         onClick={() => {
-                                            if (selectedConnection) post(`/game/travel/${selectedConnection.id}`);
+                                            if (selectedConnection && !travelOnCooldown) {
+                                                post(`/game/travel/${selectedConnection.id}`);
+                                            }
                                         }}
                                     >
-                                        {selectedConnection
-                                            ? `Keliauti · ${selectedConnection.travelSeconds} s`
-                                            : 'Nėra tiesioginio kelio'}
+                                        {!selectedConnection
+                                            ? 'Nėra tiesioginio kelio'
+                                            : travelOnCooldown
+                                                ? `Keliauti po ${travelRemaining} s`
+                                                : 'Keliauti'}
+                                    </button>
+                                </div>
+                            ) : travelOnCooldown ? (
+                                <div className="travel-action-panel traveling">
+                                    <div>
+                                        <span>Kitas perėjimas</span>
+                                        <strong>{location.name}</strong>
+                                    </div>
+                                    <button type="button" disabled>
+                                        {travelRemaining} s
                                     </button>
                                 </div>
                             ) : null}
@@ -410,7 +409,6 @@ export default function Game({
                                     <button
                                         key={key}
                                         type="button"
-                                        disabled={Boolean(travel)}
                                         onClick={() => router.visit(`/game/location/${location.id}/${key}`)}
                                     >
                                         <Icon size={18} />
