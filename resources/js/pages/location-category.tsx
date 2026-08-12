@@ -30,7 +30,7 @@ export default function LocationCategory({ location, category, items }: Props) {
             <Head title={`${category.label} · ${location.name} · RuneVentures`} />
 
             <header className="location-list-header">
-                <button type="button" onClick={() => router.visit('/dashboard')} aria-label="Grįžti">
+                <button type="button" onClick={() => router.visit('/main')} aria-label="Grįžti">
                     <ArrowLeft size={20} />
                 </button>
                 <div>
