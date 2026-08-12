@@ -12,7 +12,7 @@ type CombatState = {
         attackTicks: number;
         attackSeconds: number;
         maxHit: number;
-        nextAttackAt: string | null;
+        nextAttackAtMs: number | null;
     };
     monster: {
         slug: string;
@@ -23,7 +23,7 @@ type CombatState = {
         attackTicks: number;
         attackSeconds: number;
         maxHit: number;
-        nextAttackAt: string | null;
+        nextAttackAtMs: number | null;
     };
     lastEvent: string | null;
 };
@@ -67,9 +67,9 @@ export default function Combat({ combat: initialCombat }: Props) {
         };
     }, [combat?.status]);
 
-    const remaining = (endsAt: string | null) => {
-        if (!endsAt) return 0;
-        return Math.max(0, new Date(endsAt).getTime() - now);
+    const remaining = (endsAtMs: number | null) => {
+        if (!endsAtMs) return 0;
+        return Math.max(0, endsAtMs - now);
     };
 
     if (!combat) {
@@ -85,8 +85,8 @@ export default function Combat({ combat: initialCombat }: Props) {
         );
     }
 
-    const playerRemaining = remaining(combat.player.nextAttackAt);
-    const monsterRemaining = remaining(combat.monster.nextAttackAt);
+    const playerRemaining = remaining(combat.player.nextAttackAtMs);
+    const monsterRemaining = remaining(combat.monster.nextAttackAtMs);
     const playerCycle = combat.player.attackTicks * combat.tickMs;
     const monsterCycle = combat.monster.attackTicks * combat.tickMs;
     const playerProgress = playerCycle > 0 ? Math.max(0, Math.min(100, 100 - (playerRemaining / playerCycle) * 100)) : 100;
