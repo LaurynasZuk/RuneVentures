@@ -274,12 +274,16 @@ export default function Game({
                 </button>
                 <div className="player-copy">
                     <strong>{player.name}</strong>
-                    <span>Combat {player.combatLevel}</span>
+                    <span>LVL: {player.combatLevel}</span>
                 </div>
                 <div className="vitals">
-                    <span>HP {player.hitpoints}/{player.maxHitpoints}</span>
-                    <div>
-                        <i style={{ width: `${(player.hitpoints / player.maxHitpoints) * 100}%` }} />
+                    <div className="vital-bar hp-bar">
+                        <i style={{ width: `${Math.min(100, (player.hitpoints / Math.max(1, player.maxHitpoints)) * 100)}%` }} />
+                        <span>HP {player.hitpoints}/{player.maxHitpoints}</span>
+                    </div>
+                    <div className="vital-bar prayer-bar">
+                        <i style={{ width: `${Math.min(100, (player.prayerMana / Math.max(1, player.maxPrayerMana)) * 100)}%` }} />
+                        <span>Prayer {player.prayerMana}/{player.maxPrayerMana}</span>
                     </div>
                 </div>
             </header>
