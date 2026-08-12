@@ -5,6 +5,7 @@ import '../css/game-home-nav.css';
 import '../css/game-location-title.css';
 import '../css/game-player-bar.css';
 import '../css/combat.css';
+import '../css/shop.css';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { Map } from 'lucide-react';
 import { useEffect } from 'react';
@@ -343,6 +344,7 @@ createInertiaApp({
             case name === 'game':
             case name === 'combat':
             case name === 'location-category':
+            case name === 'shop':
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
