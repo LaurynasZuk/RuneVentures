@@ -1,0 +1,188 @@
+@layer components {
+    .shop-page main {
+        padding: .8rem;
+        padding-bottom: 5rem;
+    }
+
+    .shop-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: grid;
+        grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+        align-items: center;
+        gap: .65rem;
+        padding: .7rem .8rem;
+        border-bottom: 1px solid #625a53;
+        background: rgba(17, 17, 19, .97);
+    }
+
+    .shop-header > button {
+        width: 2.25rem;
+        height: 2.25rem;
+        display: grid;
+        place-items: center;
+        border: 1px solid #5b544e;
+        background: #161416;
+        color: #b8b1a9;
+    }
+
+    .shop-header > div:nth-child(2) {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .shop-header span {
+        color: #817b74;
+        font-size: .55rem;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+    }
+
+    .shop-header strong {
+        color: #e2dcd3;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: .85rem;
+    }
+
+    .shop-coins {
+        display: flex;
+        align-items: center;
+        gap: .3rem;
+        color: #c7b58d;
+    }
+
+    .shop-coins strong {
+        font-family: inherit;
+        font-size: .72rem;
+    }
+
+    .shop-keeper-card {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .75rem;
+        border: 1px solid #665b52;
+        background: linear-gradient(145deg, rgba(91, 60, 42, .27), #111113 72%);
+    }
+
+    .shop-keeper-card > svg {
+        color: #c2bbb2;
+    }
+
+    .shop-keeper-card div {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .shop-keeper-card span {
+        color: #817a73;
+        font-size: .55rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .shop-keeper-card strong {
+        color: #e1dbd2;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: .86rem;
+    }
+
+    .shop-section {
+        margin-top: .8rem;
+    }
+
+    .shop-section-title {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: .6rem;
+        margin-bottom: .4rem;
+    }
+
+    .shop-section-title strong {
+        color: #d8d1c8;
+        font-size: .72rem;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+    }
+
+    .shop-section-title span {
+        color: #77716b;
+        font-size: .53rem;
+        text-align: right;
+    }
+
+    .shop-list {
+        overflow: hidden;
+        border: 1px solid #5d554e;
+        background: #111113;
+    }
+
+    .shop-row {
+        display: grid;
+        grid-template-columns: 2rem minmax(0, 1fr) auto;
+        align-items: center;
+        gap: .55rem;
+        min-height: 3.4rem;
+        padding: .55rem .6rem;
+        border-bottom: 1px solid #3f3934;
+    }
+
+    .shop-row:last-child {
+        border-bottom: 0;
+    }
+
+    .shop-item-icon {
+        width: 1.9rem;
+        height: 1.9rem;
+        display: grid;
+        place-items: center;
+        border: 1px solid #514b46;
+        background: #0c0c0e;
+        color: #aaa49c;
+    }
+
+    .shop-item-copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: .12rem;
+    }
+
+    .shop-item-copy strong {
+        overflow: hidden;
+        color: #d7d1c9;
+        font-size: .68rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .shop-item-copy span {
+        color: #7f7972;
+        font-size: .54rem;
+    }
+
+    .shop-row > button {
+        min-width: 4.25rem;
+        min-height: 2rem;
+        padding: 0 .45rem;
+        border: 1px solid #725d4e;
+        background: linear-gradient(180deg, #302119, #1c1614);
+        color: #ded7ce;
+        font-size: .58rem;
+        font-weight: 700;
+    }
+
+    .shop-row > button:disabled {
+        opacity: .42;
+    }
+
+    .shop-empty {
+        padding: .9rem;
+        color: #817b75;
+        font-size: .64rem;
+        text-align: center;
+    }
+}
