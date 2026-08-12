@@ -2,28 +2,28 @@ import { Head, router } from '@inertiajs/react';
 import { Shield, Swords } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+type FighterState = {
+    hp: number;
+    maxHp: number;
+    attackIntervalMs: number;
+    attackSeconds: number;
+    maxHit: number;
+    attackRoll: number;
+    defenceRoll: number;
+    hitChance: number;
+    nextAttackAtMs: number | null;
+};
+
 type CombatState = {
     status: 'active' | 'won' | 'lost' | 'fled';
-    tickMs: number;
+    serverNowMs: number;
+    damageScale: number;
     style: 'melee' | 'ranged' | 'magic';
-    player: {
-        hp: number;
-        maxHp: number;
-        attackTicks: number;
-        attackSeconds: number;
-        maxHit: number;
-        nextAttackAtMs: number | null;
-    };
-    monster: {
+    player: FighterState;
+    monster: FighterState & {
         slug: string;
         name: string;
         level: number;
-        hp: number;
-        maxHp: number;
-        attackTicks: number;
-        attackSeconds: number;
-        maxHit: number;
-        nextAttackAtMs: number | null;
     };
     lastEvent: string | null;
 };
@@ -35,6 +35,9 @@ interface Props {
 export default function Combat({ combat: initialCombat }: Props) {
     const [combat, setCombat] = useState(initialCombat);
     const [now, setNow] = useState(Date.now());
+    const [serverOffsetMs, setServerOffsetMs] = useState(
+        initialCombat ? initialCombat.serverNowMs - Date.now() : 0,
+    );
 
     useEffect(() => {
         const clock = window.setInterval(() => setNow(Date.now()), 100);
@@ -55,7 +58,10 @@ export default function Combat({ combat: initialCombat }: Props) {
             if (!response.ok || cancelled) return;
 
             const data = await response.json();
-            if (!cancelled) setCombat(data.combat);
+            if (!cancelled && data.combat) {
+                setCombat(data.combat);
+                setServerOffsetMs(data.combat.serverNowMs - Date.now());
+            }
         };
 
         const poller = window.setInterval(refresh, 350);
@@ -69,7 +75,7 @@ export default function Combat({ combat: initialCombat }: Props) {
 
     const remaining = (endsAtMs: number | null) => {
         if (!endsAtMs) return 0;
-        return Math.max(0, endsAtMs - now);
+        return Math.max(0, endsAtMs - (now + serverOffsetMs));
     };
 
     if (!combat) {
@@ -87,10 +93,14 @@ export default function Combat({ combat: initialCombat }: Props) {
 
     const playerRemaining = remaining(combat.player.nextAttackAtMs);
     const monsterRemaining = remaining(combat.monster.nextAttackAtMs);
-    const playerCycle = combat.player.attackTicks * combat.tickMs;
-    const monsterCycle = combat.monster.attackTicks * combat.tickMs;
-    const playerProgress = playerCycle > 0 ? Math.max(0, Math.min(100, 100 - (playerRemaining / playerCycle) * 100)) : 100;
-    const monsterProgress = monsterCycle > 0 ? Math.max(0, Math.min(100, 100 - (monsterRemaining / monsterCycle) * 100)) : 100;
+    const playerCycle = combat.player.attackIntervalMs;
+    const monsterCycle = combat.monster.attackIntervalMs;
+    const playerProgress = playerCycle > 0
+        ? Math.max(0, Math.min(100, 100 - (playerRemaining / playerCycle) * 100))
+        : 100;
+    const monsterProgress = monsterCycle > 0
+        ? Math.max(0, Math.min(100, 100 - (monsterRemaining / monsterCycle) * 100))
+        : 100;
 
     return (
         <div className="game-shell combat-page">
@@ -131,10 +141,12 @@ export default function Combat({ combat: initialCombat }: Props) {
                                     <span>Tavo smūgis</span>
                                     <strong>{(playerRemaining / 1000).toFixed(1)} s</strong>
                                 </div>
-                                <small>{combat.player.attackTicks} ticks · {combat.player.attackSeconds.toFixed(1)} s</small>
+                                <small>{combat.player.attackSeconds.toFixed(2)} s rate</small>
                             </div>
                             <div className="combat-timer-bar"><i style={{ width: `${playerProgress}%` }} /></div>
-                            <p>Max hit {combat.player.maxHit}</p>
+                            <p>
+                                Max hit {combat.player.maxHit} · Hit {(combat.player.hitChance * 100).toFixed(1)}% · Atk roll {combat.player.attackRoll} · Def roll {combat.player.defenceRoll}
+                            </p>
                         </div>
 
                         <div className="combat-timer-card monster-timer">
@@ -144,10 +156,12 @@ export default function Combat({ combat: initialCombat }: Props) {
                                     <span>Monstro smūgis</span>
                                     <strong>{(monsterRemaining / 1000).toFixed(1)} s</strong>
                                 </div>
-                                <small>{combat.monster.attackTicks} ticks · {combat.monster.attackSeconds.toFixed(1)} s</small>
+                                <small>{combat.monster.attackSeconds.toFixed(2)} s rate</small>
                             </div>
                             <div className="combat-timer-bar"><i style={{ width: `${monsterProgress}%` }} /></div>
-                            <p>Max hit {combat.monster.maxHit}</p>
+                            <p>
+                                Max hit {combat.monster.maxHit} · Hit {(combat.monster.hitChance * 100).toFixed(1)}% · Atk roll {combat.monster.attackRoll} · Def roll {combat.monster.defenceRoll}
+                            </p>
                         </div>
                     </section>
                 )}
