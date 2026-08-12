@@ -25,13 +25,21 @@ return new class extends Migration
         $now = now();
 
         foreach (GameItemCatalog::all() as $item) {
+            // OSRS has no dual-wield/off-hand weapon system.
+            if (($item['game_data']['hand'] ?? null) === 'off_hand') {
+                continue;
+            }
+
             $slug = $item['slug'];
             $exists = DB::table('items')->where('slug', $slug)->exists();
             $payload = $item;
             unset($payload['slug']);
 
             $payload['game_data'] = json_encode(
-                $payload['game_data'],
+                $this->withoutRs3CombatData(
+                    $payload['game_data'],
+                    $payload['category'] ?? null,
+                ),
                 JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
             );
             $payload['updated_at'] = $now;
@@ -68,5 +76,20 @@ return new class extends Migration
                 'game_data',
             ]);
         });
+    }
+
+    private function withoutRs3CombatData(array $data, ?string $category): array
+    {
+        foreach (array_keys($data) as $key) {
+            if (str_starts_with($key, 'rs3_')) {
+                unset($data[$key]);
+            }
+        }
+
+        if (in_array($category, ['weapon', 'armour'], true)) {
+            unset($data['source_system'], $data['armour_type']);
+        }
+
+        return $data;
     }
 };
