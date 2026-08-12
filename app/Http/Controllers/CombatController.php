@@ -73,7 +73,7 @@ class CombatController extends Controller
         $defaults = self::STYLE_DEFAULTS[$style];
         $playerAttackTicks = max(1, (int) ($weapon?->attack_ticks ?? $defaults['attack_ticks']));
         $playerMaxHit = max(1, (int) ($weapon?->max_hit ?? $defaults['max_hit']));
-        $now = now();
+        $nowMs = $this->nowMs();
 
         CombatEncounter::updateOrCreate(
             ['player_id' => $player->id],
@@ -89,8 +89,10 @@ class CombatController extends Controller
                 'player_style' => $style,
                 'player_attack_ticks' => $playerAttackTicks,
                 'player_max_hit' => $playerMaxHit,
-                'player_next_attack_at' => $now,
-                'monster_next_attack_at' => $now->copy()->addMilliseconds($monsterData['attack_ticks'] * self::TICK_MS),
+                'player_next_attack_at' => null,
+                'monster_next_attack_at' => null,
+                'player_next_attack_ms' => $nowMs,
+                'monster_next_attack_ms' => $nowMs + ($monsterData['attack_ticks'] * self::TICK_MS),
                 'status' => 'active',
                 'last_event' => "Kova su {$monsterData['name']} prasidėjo.",
             ],
@@ -142,6 +144,8 @@ class CombatController extends Controller
                 'status' => 'fled',
                 'player_next_attack_at' => null,
                 'monster_next_attack_at' => null,
+                'player_next_attack_ms' => null,
+                'monster_next_attack_ms' => null,
                 'last_event' => 'Pasitraukei iš kovos.',
             ]);
 
@@ -170,22 +174,31 @@ class CombatController extends Controller
                 return $locked;
             }
 
-            $now = now();
+            $nowMs = $this->nowMs();
+
+            if ($locked->player_next_attack_ms === null) {
+                $locked->player_next_attack_ms = $nowMs;
+            }
+
+            if ($locked->monster_next_attack_ms === null) {
+                $locked->monster_next_attack_ms = $nowMs + ($locked->monster_attack_ticks * self::TICK_MS);
+            }
+
             $iterations = 0;
 
             while ($locked->status === 'active' && $iterations < 100) {
-                $playerAt = $locked->player_next_attack_at;
-                $monsterAt = $locked->monster_next_attack_at;
+                $playerAt = $locked->player_next_attack_ms;
+                $monsterAt = $locked->monster_next_attack_ms;
 
-                $playerDue = $playerAt !== null && $playerAt->lte($now);
-                $monsterDue = $monsterAt !== null && $monsterAt->lte($now);
+                $playerDue = $playerAt !== null && $playerAt <= $nowMs;
+                $monsterDue = $monsterAt !== null && $monsterAt <= $nowMs;
 
                 if (! $playerDue && ! $monsterDue) {
                     break;
                 }
 
                 $playerActsFirst = $playerDue && (
-                    ! $monsterDue || $playerAt->lte($monsterAt)
+                    ! $monsterDue || $playerAt <= $monsterAt
                 );
 
                 if ($playerActsFirst) {
@@ -194,14 +207,14 @@ class CombatController extends Controller
                     $locked->last_event = $damage > 0
                         ? "Pataikei {$damage}."
                         : 'Nepataikei.';
-                    $locked->player_next_attack_at = $playerAt->copy()->addMilliseconds(
-                        $locked->player_attack_ticks * self::TICK_MS,
+                    $locked->player_next_attack_ms = $playerAt + (
+                        $locked->player_attack_ticks * self::TICK_MS
                     );
 
                     if ($locked->monster_hp <= 0) {
                         $locked->status = 'won';
-                        $locked->player_next_attack_at = null;
-                        $locked->monster_next_attack_at = null;
+                        $locked->player_next_attack_ms = null;
+                        $locked->monster_next_attack_ms = null;
                         $locked->last_event = "Nugalėjai {$locked->monster_name}.";
                     }
                 } else {
@@ -211,16 +224,16 @@ class CombatController extends Controller
                     if ($remainingHp <= 0) {
                         $lockedPlayer->hitpoints = 1;
                         $locked->status = 'lost';
-                        $locked->player_next_attack_at = null;
-                        $locked->monster_next_attack_at = null;
+                        $locked->player_next_attack_ms = null;
+                        $locked->monster_next_attack_ms = null;
                         $locked->last_event = "{$locked->monster_name} tave nugalėjo.";
                     } else {
                         $lockedPlayer->hitpoints = $remainingHp;
                         $locked->last_event = $damage > 0
                             ? "{$locked->monster_name} pataikė {$damage}."
                             : "{$locked->monster_name} nepataikė.";
-                        $locked->monster_next_attack_at = $monsterAt->copy()->addMilliseconds(
-                            $locked->monster_attack_ticks * self::TICK_MS,
+                        $locked->monster_next_attack_ms = $monsterAt + (
+                            $locked->monster_attack_ticks * self::TICK_MS
                         );
                     }
 
@@ -247,7 +260,7 @@ class CombatController extends Controller
                 'attackTicks' => $encounter->player_attack_ticks,
                 'attackSeconds' => ($encounter->player_attack_ticks * self::TICK_MS) / 1000,
                 'maxHit' => $encounter->player_max_hit,
-                'nextAttackAt' => $encounter->player_next_attack_at?->toIso8601String(),
+                'nextAttackAtMs' => $encounter->player_next_attack_ms,
             ],
             'monster' => [
                 'slug' => $encounter->monster_slug,
@@ -258,9 +271,14 @@ class CombatController extends Controller
                 'attackTicks' => $encounter->monster_attack_ticks,
                 'attackSeconds' => ($encounter->monster_attack_ticks * self::TICK_MS) / 1000,
                 'maxHit' => $encounter->monster_max_hit,
-                'nextAttackAt' => $encounter->monster_next_attack_at?->toIso8601String(),
+                'nextAttackAtMs' => $encounter->monster_next_attack_ms,
             ],
             'lastEvent' => $encounter->last_event,
         ];
+    }
+
+    private function nowMs(): int
+    {
+        return (int) floor(microtime(true) * 1000);
     }
 }
