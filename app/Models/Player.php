@@ -11,6 +11,8 @@ class Player extends Model
     protected $fillable = [
         'user_id',
         'location_id',
+        'travel_destination_id',
+        'travel_ends_at',
         'name',
         'hitpoints',
         'max_hitpoints',
@@ -29,12 +31,18 @@ class Player extends Model
             'prayer_mana' => 'integer',
             'inventory_base_slots' => 'integer',
             'backpack_slots_unlocked' => 'integer',
+            'travel_ends_at' => 'datetime',
         ];
     }
 
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    public function travelDestination(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'travel_destination_id');
     }
 
     public function user(): BelongsTo
