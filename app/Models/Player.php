@@ -20,6 +20,18 @@ class Player extends Model
         'backpack_slots_unlocked',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'hitpoints' => 'integer',
+            'max_hitpoints' => 'integer',
+            'prayer_points' => 'integer',
+            'prayer_mana' => 'integer',
+            'inventory_base_slots' => 'integer',
+            'backpack_slots_unlocked' => 'integer',
+        ];
+    }
+
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
