@@ -146,9 +146,6 @@ class CombatController extends Controller
                 ['weight' => 32, 'slug' => 'feather', 'name' => 'Feather', 'icon' => 'feather', 'stack_limit' => null, 'quantity' => 15],
                 ['weight' => 32],
             ],
-            'tertiary' => [
-                ['one_in' => 300, 'slug' => 'clue-scroll-beginner', 'name' => 'Clue scroll (beginner)', 'icon' => 'scroll', 'stack_limit' => 1, 'quantity' => 1],
-            ],
         ],
         'goblin' => [
             'always' => [
@@ -156,7 +153,6 @@ class CombatController extends Controller
             ],
             'weighted' => [
                 ['weight' => 3, 'slug' => 'bronze-sq-shield', 'name' => 'Bronze sq shield', 'icon' => 'shield', 'stack_limit' => 1, 'quantity' => 1],
-                ['weight' => 4, 'slug' => 'bronze-spear', 'name' => 'Bronze spear', 'icon' => 'spear', 'stack_limit' => 1, 'quantity' => 1],
                 ['weight' => 5, 'slug' => 'body-rune', 'name' => 'Body rune', 'icon' => 'rune', 'stack_limit' => null, 'quantity' => 7],
                 ['weight' => 6, 'slug' => 'water-rune', 'name' => 'Water rune', 'icon' => 'rune', 'stack_limit' => null, 'quantity' => 6],
                 ['weight' => 3, 'slug' => 'earth-rune', 'name' => 'Earth rune', 'icon' => 'rune', 'stack_limit' => null, 'quantity' => 4],
@@ -167,19 +163,12 @@ class CombatController extends Controller
                 ['weight' => 2, 'slug' => 'coins', 'name' => 'Coins', 'icon' => 'coins', 'stack_limit' => null, 'quantity' => 20],
                 ['weight' => 1, 'slug' => 'coins', 'name' => 'Coins', 'icon' => 'coins', 'stack_limit' => null, 'quantity' => 1],
                 ['weight' => 15, 'slug' => 'hammer', 'name' => 'Hammer', 'icon' => 'hammer', 'stack_limit' => 1, 'quantity' => 1],
-                ['weight' => 2, 'slug' => 'goblin-book', 'name' => 'Goblin book', 'icon' => 'book', 'stack_limit' => 1, 'quantity' => 1],
                 ['weight' => 5, 'slug' => 'goblin-mail', 'name' => 'Goblin mail', 'icon' => 'armour', 'stack_limit' => 1, 'quantity' => 1],
                 ['weight' => 3, 'slug' => 'chefs-hat', 'name' => "Chef's hat", 'icon' => 'hat', 'stack_limit' => 1, 'quantity' => 1],
                 ['weight' => 2, 'slug' => 'beer', 'name' => 'Beer', 'icon' => 'drink', 'stack_limit' => 1, 'quantity' => 1],
                 ['weight' => 1, 'slug' => 'brass-necklace', 'name' => 'Brass necklace', 'icon' => 'necklace', 'stack_limit' => 1, 'quantity' => 1],
                 ['weight' => 1, 'slug' => 'air-talisman', 'name' => 'Air talisman', 'icon' => 'talisman', 'stack_limit' => 1, 'quantity' => 1],
-                ['weight' => 38],
-            ],
-            'tertiary' => [
-                ['one_in' => 35, 'slug' => 'ensouled-goblin-head', 'name' => 'Ensouled goblin head', 'icon' => 'skull', 'stack_limit' => 1, 'quantity' => 1],
-                ['one_in' => 64, 'slug' => 'clue-scroll-beginner', 'name' => 'Clue scroll (beginner)', 'icon' => 'scroll', 'stack_limit' => 1, 'quantity' => 1],
-                ['one_in' => 128, 'slug' => 'clue-scroll-easy', 'name' => 'Clue scroll (easy)', 'icon' => 'scroll', 'stack_limit' => 1, 'quantity' => 1],
-                ['one_in' => 5000, 'slug' => 'goblin-champion-scroll', 'name' => 'Goblin champion scroll', 'icon' => 'scroll', 'stack_limit' => 1, 'quantity' => 1],
+                ['weight' => 44],
             ],
         ],
     ];
