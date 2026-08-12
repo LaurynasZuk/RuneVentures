@@ -58,22 +58,19 @@
     font-size: .68rem;
 }
 
-.world-map-title svg {
-    color: #b7b1a8;
-}
-
 .world-map-viewport {
     position: relative;
-    height: 17rem;
+    height: 22rem;
     overflow: hidden;
     touch-action: none;
     cursor: grab;
-    background-color: #111113;
+    background-color: #101012;
     background-image:
-        linear-gradient(rgba(149,139,129,.055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(149,139,129,.055) 1px, transparent 1px),
-        radial-gradient(circle at 20% 45%, rgba(102,68,45,.22), transparent 18rem);
-    background-size: 34px 34px, 34px 34px, auto;
+        radial-gradient(circle at 18% 22%, rgba(103,69,47,.18), transparent 16rem),
+        radial-gradient(circle at 68% 70%, rgba(128,119,110,.06), transparent 15rem),
+        linear-gradient(rgba(149,139,129,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(149,139,129,.035) 1px, transparent 1px);
+    background-size: auto, auto, 42px 42px, 42px 42px;
 }
 
 .world-map-viewport:active {
@@ -84,8 +81,8 @@
     position: absolute;
     left: 0;
     top: 0;
-    width: 760px;
-    height: 300px;
+    width: 700px;
+    height: 640px;
     transform-origin: 0 0;
     will-change: transform;
 }
@@ -93,104 +90,156 @@
 .world-map-lines {
     position: absolute;
     inset: 0;
-    width: 760px;
-    height: 300px;
+    width: 700px;
+    height: 640px;
     overflow: visible;
     pointer-events: none;
 }
 
 .world-map-lines line {
-    stroke: #8b837a;
+    stroke: #77716b;
     stroke-width: 3;
     stroke-linecap: round;
-    stroke-dasharray: 9 7;
     filter: drop-shadow(0 1px 0 #050506);
 }
 
 .world-map-node {
     position: absolute;
-    display: flex;
-    align-items: center;
-    gap: .65rem;
-    min-width: 9.8rem;
+    width: 9rem;
+    height: 5.2rem;
     transform: translate(-50%, -50%);
-    padding: .55rem .7rem;
-    border: 1px solid #777067;
-    background: linear-gradient(180deg, #1c1a1c 0%, #111113 100%);
-    color: #d3cec6;
-    text-align: left;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 0 #060607;
+    border: 0;
+    background: transparent;
+    color: #d7d2cb;
+    text-align: center;
     z-index: 2;
+    touch-action: manipulation;
 }
 
-.world-map-node:disabled {
-    opacity: .55;
-}
-
-.world-map-node.reachable {
-    border-color: #81644f;
-    background: linear-gradient(180deg, #291d17 0%, #151214 100%);
-}
-
-.world-map-node.current {
-    border-color: #b3ada4;
-    box-shadow: inset 0 0 0 1px #5a544e, inset 0 2px 0 rgba(255,255,255,.08), 0 2px 0 #060607;
+.world-map-node-name {
+    position: absolute;
+    left: 50%;
+    bottom: 3.15rem;
+    width: 9rem;
+    transform: translateX(-50%);
+    overflow: hidden;
+    color: #d9d3cb;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: .78rem;
+    font-weight: 700;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    text-shadow: 0 2px 2px #050506;
+    white-space: nowrap;
 }
 
 .world-map-dot {
-    display: grid;
-    place-items: center;
-    width: 2.1rem;
-    height: 2.1rem;
-    flex: 0 0 2.1rem;
-    border: 1px solid #8f8980;
-    background: #241a15;
-    color: #d1cbc2;
-    transform: rotate(45deg);
+    position: absolute;
+    left: 50%;
+    bottom: .25rem;
+    width: 2.7rem;
+    height: 2.7rem;
+    transform: translateX(-50%);
+    border: 2px solid #8d877f;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 30%, #2b292b 0%, #171719 62%, #0b0b0d 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        inset 0 -3px 5px rgba(0,0,0,.5),
+        0 2px 0 #050506;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 
-.world-map-dot svg {
-    transform: rotate(-45deg);
+.world-map-node.reachable .world-map-dot {
+    border-color: #92735d;
+}
+
+.world-map-node.selected .world-map-dot {
+    border-color: #c0b9b0;
+    box-shadow:
+        0 0 0 3px rgba(111,76,55,.75),
+        inset 0 1px 0 rgba(255,255,255,.15),
+        0 2px 0 #050506;
 }
 
 .world-map-node.current .world-map-dot {
-    background: #313033;
-    border-color: #c4beb5;
+    border-color: #eee8de;
+    background: radial-gradient(circle at 35% 30%, #6d6966 0%, #363437 52%, #171719 100%);
+    box-shadow:
+        0 0 0 3px rgba(190,183,174,.22),
+        0 0 15px rgba(226,218,207,.7),
+        0 0 30px rgba(151,139,127,.34),
+        inset 0 1px 0 rgba(255,255,255,.35),
+        0 2px 0 #050506;
 }
 
-.world-map-node-copy {
+.world-map-node.current .world-map-node-name {
+    color: #f0ebe4;
+}
+
+.world-map-node.traveling:not(.current) .world-map-dot {
+    border-color: #9f7355;
+    box-shadow:
+        0 0 0 3px rgba(119,76,50,.28),
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 2px 0 #050506;
+}
+
+.travel-action-panel {
     display: flex;
-    min-width: 0;
-    flex-direction: column;
-    line-height: 1.1;
+    align-items: center;
+    justify-content: space-between;
+    gap: .8rem;
+    padding: .8rem .9rem;
+    border-top: 1px solid #514941;
+    background: linear-gradient(180deg, #1a1616 0%, #111113 100%);
 }
 
-.world-map-node-copy small {
-    color: #8d8780;
-    font-size: .58rem;
-    letter-spacing: .12em;
+.travel-action-panel > div {
+    min-width: 0;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: .12rem;
+}
+
+.travel-action-panel span {
+    color: #7f7972;
+    font-size: .59rem;
+    letter-spacing: .11em;
     text-transform: uppercase;
 }
 
-.world-map-node-copy strong {
-    margin-top: .15rem;
+.travel-action-panel strong {
     overflow: hidden;
-    color: #e4ded6;
+    color: #ddd7cf;
     font-family: Georgia, 'Times New Roman', serif;
     font-size: .86rem;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.world-map-node-copy em {
-    margin-top: .22rem;
-    color: #a78369;
-    font-size: .61rem;
-    font-style: normal;
+.travel-action-panel button {
+    min-width: 8.4rem;
+    min-height: 2.55rem;
+    padding: .55rem .7rem;
+    border: 1px solid #887263;
+    background: linear-gradient(180deg, #3a281f 0%, #211813 100%);
+    color: #e1dad1;
+    font-size: .72rem;
+    font-weight: 700;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 1px 0 #050506;
 }
 
-.world-map-node.current .world-map-node-copy em {
-    color: #aaa59e;
+.travel-action-panel button:disabled {
+    border-color: #544e48;
+    background: #171517;
+    color: #77716a;
+}
+
+.travel-action-panel.traveling button {
+    border-color: #7d6e63;
+    color: #c9c2ba;
 }
 
 .location-menu-section {
@@ -246,6 +295,10 @@
 
 .location-category-grid button:active {
     background-color: #291d17;
+}
+
+.location-category-grid button:disabled {
+    opacity: .42;
 }
 
 .location-category-grid button > svg:first-child {
@@ -377,4 +430,19 @@
     padding: 1rem;
     color: #8e8982;
     font-size: .8rem;
+}
+
+@media (max-width: 420px) {
+    .world-map-viewport {
+        height: 20rem;
+    }
+
+    .travel-action-panel {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .travel-action-panel button {
+        width: 100%;
+    }
 }
