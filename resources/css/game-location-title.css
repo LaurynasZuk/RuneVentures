@@ -56,6 +56,7 @@
     transform: translate3d(var(--map-offset-x), var(--map-offset-y), 0) scale(var(--world-map-scale)) !important;
 }
 
+/* node x/y is the exact circle centre */
 .world-map-node {
     width: 9rem;
     height: 2.7rem;
@@ -66,29 +67,25 @@
     bottom: calc(100% + .3rem);
 }
 
-.world-map-dot {
-    top: 50%;
-    bottom: auto;
-    transform: translate(-50%, -50%);
-    background: radial-gradient(
-        circle at 35% 30%,
-        rgba(43, 41, 43, .48) 0%,
-        rgba(23, 23, 25, .58) 62%,
-        rgba(11, 11, 13, .72) 100%
-    );
-}
-
-.world-map-node.current .world-map-dot {
-    background: radial-gradient(
-        circle at 35% 30%,
-        rgba(109, 105, 102, .52) 0%,
-        rgba(54, 52, 55, .58) 52%,
-        rgba(23, 23, 25, .7) 100%
-    );
+.world-map-lines {
+    z-index: 1;
 }
 
 .world-map-lines line {
     stroke: #8d8780;
+}
+
+/* Keep the circle fully opaque above the centre-to-centre SVG line. */
+.world-map-dot {
+    top: 50%;
+    bottom: auto;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 35% 30%, #2b292b 0%, #171719 62%, #0b0b0d 100%);
+}
+
+.world-map-node.current .world-map-dot {
+    background: radial-gradient(circle at 35% 30%, #6d6966 0%, #363437 52%, #171719 100%);
 }
 
 @media (max-width: 420px) {
