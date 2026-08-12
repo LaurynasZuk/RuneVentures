@@ -6,6 +6,8 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\Player;
+use App\Models\PlayerBackpack;
+use App\Models\PlayerEquipment;
 use App\Models\PlayerSkill;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,19 +17,77 @@ use Inertia\Response;
 
 class GameController extends Controller
 {
+    private const EQUIPMENT_SLOTS = [
+        'head',
+        'cape',
+        'neck',
+        'ammo',
+        'weapon',
+        'body',
+        'shield',
+        'legs',
+        'hands',
+        'feet',
+        'ring',
+    ];
+
     public function show(Request $request): Response
     {
         $player = $this->player($request);
-        $player->load(['location.destinations', 'skills', 'inventory.item']);
+        $player->load([
+            'location.destinations',
+            'skills',
+            'inventory.item',
+            'backpacks.item',
+            'equipment.item',
+        ]);
 
         $world = $this->worldMap();
+        $prayerLevel = $this->skillLevel($player, 'prayer');
+        $maxPrayerMana = $prayerLevel * 100;
+        $prayerMana = min($player->prayer_mana, $maxPrayerMana);
+
+        if ($player->prayer_mana !== $prayerMana) {
+            $player->update(['prayer_mana' => $prayerMana]);
+        }
+
+        $backpackBonus = $player->backpacks
+            ->take($player->backpack_slots_unlocked)
+            ->sum(fn (PlayerBackpack $slot) => (int) ($slot->item?->inventory_slots_bonus ?? 0));
+        $inventoryCapacity = $player->inventory_base_slots + $backpackBonus;
+
+        $equipment = collect(self::EQUIPMENT_SLOTS)->mapWithKeys(function (string $slot) use ($player) {
+            $row = $player->equipment->firstWhere('slot', $slot);
+
+            return [$slot => $row?->item ? [
+                'id' => $row->item->id,
+                'name' => $row->item->name,
+                'icon' => $row->item->icon,
+            ] : null];
+        });
+
+        $backpacks = collect(range(1, 5))->map(function (int $slot) use ($player) {
+            $row = $player->backpacks->firstWhere('slot', $slot);
+
+            return [
+                'slot' => $slot,
+                'unlocked' => $slot <= $player->backpack_slots_unlocked,
+                'item' => $row?->item ? [
+                    'id' => $row->item->id,
+                    'name' => $row->item->name,
+                    'icon' => $row->item->icon,
+                    'slotsBonus' => (int) $row->item->inventory_slots_bonus,
+                ] : null,
+            ];
+        });
 
         return Inertia::render('game', [
             'player' => [
                 'name' => $player->name,
                 'hitpoints' => $player->hitpoints,
                 'maxHitpoints' => $player->max_hitpoints,
-                'prayerPoints' => $player->prayer_points,
+                'prayerMana' => $prayerMana,
+                'maxPrayerMana' => $maxPrayerMana,
                 'combatLevel' => $this->combatLevel($player),
             ],
             'location' => [
@@ -50,12 +110,18 @@ class GameController extends Controller
                 'xp' => $skill->xp,
                 'level' => $this->levelForXp($skill->xp, $skill->skill === 'hitpoints' ? 10 : 1),
             ]]),
-            'inventory' => $player->inventory->map(fn (InventoryItem $slot) => [
-                'id' => $slot->item->id,
-                'name' => $slot->item->name,
-                'icon' => $slot->item->icon,
-                'quantity' => $slot->quantity,
-            ]),
+            'inventory' => $player->inventory->map(fn (InventoryItem $stack) => [
+                'slot' => $stack->slot,
+                'id' => $stack->item->id,
+                'name' => $stack->item->name,
+                'icon' => $stack->item->icon,
+                'quantity' => $stack->quantity,
+                'stackLimit' => $stack->item->stackable ? $stack->item->stack_limit : 1,
+            ])->values(),
+            'inventoryCapacity' => $inventoryCapacity,
+            'backpacks' => $backpacks,
+            'equipment' => $equipment,
+            'equipmentSlots' => self::EQUIPMENT_SLOTS,
             'flash' => ['game' => session('game')],
         ]);
     }
@@ -105,12 +171,19 @@ class GameController extends Controller
         $player = $this->player($request);
         abort_unless(in_array($player->location->slug, ['starter-village'], true), 403);
 
-        DB::transaction(function () use ($player) {
+        $added = DB::transaction(function () use ($player) {
+            if (! $this->grantItem($player, 'logs', 'Logs', 'logs', 20)) {
+                return false;
+            }
+
             $this->grantXp($player, 'woodcutting', 25);
-            $this->grantItem($player, 'logs', 'Logs', 'logs');
+
+            return true;
         });
 
-        return back()->with('game', '+1 Logs · +25 Woodcutting XP');
+        return back()->with('game', $added
+            ? '+1 Logs · +25 Woodcutting XP'
+            : 'Inventorius pilnas.');
     }
 
     public function attack(Request $request, string $monster): RedirectResponse
@@ -121,15 +194,24 @@ class GameController extends Controller
 
         abort_unless($monsterData, 404);
 
-        DB::transaction(function () use ($player, $monsterData) {
+        $added = DB::transaction(function () use ($player, $monsterData) {
+            if (! $this->grantItem($player, 'bones', 'Bones', 'bones', 20)) {
+                return false;
+            }
+
             $damageTaken = max(0, (int) $monsterData['level'] - 1);
             $remainingHp = max(1, $player->hitpoints - $damageTaken);
             $player->update(['hitpoints' => $remainingHp]);
 
             $this->grantXp($player, 'attack', (int) $monsterData['xp']);
             $this->grantXp($player, 'hitpoints', max(1, (int) floor($monsterData['xp'] / 3)));
-            $this->grantItem($player, 'bones', 'Bones', 'bones');
+
+            return true;
         });
+
+        if (! $added) {
+            return back()->with('game', 'Inventorius pilnas.');
+        }
 
         return back()->with(
             'game',
@@ -143,7 +225,13 @@ class GameController extends Controller
 
         $player = Player::firstOrCreate(
             ['user_id' => $request->user()->id],
-            ['location_id' => $start->id, 'name' => $request->user()->name],
+            [
+                'location_id' => $start->id,
+                'name' => $request->user()->name,
+                'prayer_mana' => 100,
+                'inventory_base_slots' => 25,
+                'backpack_slots_unlocked' => 1,
+            ],
         );
 
         foreach (['attack', 'strength', 'defence', 'hitpoints', 'ranged', 'magic', 'prayer', 'woodcutting', 'mining', 'fishing', 'cooking'] as $skill) {
@@ -151,6 +239,20 @@ class GameController extends Controller
                 ['player_id' => $player->id, 'skill' => $skill],
                 ['xp' => 0],
             );
+        }
+
+        foreach (range(1, 5) as $slot) {
+            PlayerBackpack::firstOrCreate([
+                'player_id' => $player->id,
+                'slot' => $slot,
+            ]);
+        }
+
+        foreach (self::EQUIPMENT_SLOTS as $slot) {
+            PlayerEquipment::firstOrCreate([
+                'player_id' => $player->id,
+                'slot' => $slot,
+            ]);
         }
 
         return $player;
@@ -225,19 +327,118 @@ class GameController extends Controller
         $row->increment('xp', $amount);
     }
 
-    private function grantItem(Player $player, string $slug, string $name, string $icon): void
-    {
+    private function grantItem(
+        Player $player,
+        string $slug,
+        string $name,
+        string $icon,
+        ?int $stackLimit = null,
+        int $amount = 1,
+    ): bool {
         $item = Item::firstOrCreate(
             ['slug' => $slug],
-            ['name' => $name, 'icon' => $icon, 'stackable' => true],
+            [
+                'name' => $name,
+                'icon' => $icon,
+                'stackable' => $stackLimit !== 1,
+                'stack_limit' => $stackLimit,
+            ],
         );
 
-        $slot = InventoryItem::firstOrCreate(
-            ['player_id' => $player->id, 'item_id' => $item->id],
-            ['quantity' => 0],
-        );
+        if ($item->stack_limit !== $stackLimit || $item->stackable !== ($stackLimit !== 1)) {
+            $item->update([
+                'stackable' => $stackLimit !== 1,
+                'stack_limit' => $stackLimit,
+            ]);
+        }
 
-        $slot->increment('quantity');
+        $remaining = $amount;
+        $limit = $item->stackable ? $item->stack_limit : 1;
+        $capacity = $this->inventoryCapacity($player);
+
+        $existingStacks = InventoryItem::query()
+            ->where('player_id', $player->id)
+            ->where('item_id', $item->id)
+            ->orderBy('slot')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($existingStacks as $stack) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            if ($limit === null) {
+                $stack->increment('quantity', $remaining);
+
+                return true;
+            }
+
+            $space = max(0, $limit - $stack->quantity);
+            if ($space === 0) {
+                continue;
+            }
+
+            $toAdd = min($space, $remaining);
+            $stack->increment('quantity', $toAdd);
+            $remaining -= $toAdd;
+        }
+
+        while ($remaining > 0) {
+            $slot = $this->firstFreeInventorySlot($player->id, $capacity);
+            if ($slot === null) {
+                return false;
+            }
+
+            $quantity = $limit === null ? $remaining : min($limit, $remaining);
+
+            InventoryItem::create([
+                'player_id' => $player->id,
+                'slot' => $slot,
+                'item_id' => $item->id,
+                'quantity' => $quantity,
+            ]);
+
+            $remaining -= $quantity;
+        }
+
+        return true;
+    }
+
+    private function inventoryCapacity(Player $player): int
+    {
+        $player->loadMissing('backpacks.item');
+
+        $bonus = $player->backpacks
+            ->take($player->backpack_slots_unlocked)
+            ->sum(fn (PlayerBackpack $slot) => (int) ($slot->item?->inventory_slots_bonus ?? 0));
+
+        return (int) $player->inventory_base_slots + $bonus;
+    }
+
+    private function firstFreeInventorySlot(int $playerId, int $capacity): ?int
+    {
+        $used = InventoryItem::query()
+            ->where('player_id', $playerId)
+            ->whereNotNull('slot')
+            ->pluck('slot')
+            ->map(fn ($slot) => (int) $slot)
+            ->all();
+
+        for ($slot = 1; $slot <= $capacity; $slot++) {
+            if (! in_array($slot, $used, true)) {
+                return $slot;
+            }
+        }
+
+        return null;
+    }
+
+    private function skillLevel(Player $player, string $skill): int
+    {
+        $row = $player->skills->firstWhere('skill', $skill);
+
+        return $this->levelForXp((int) ($row?->xp ?? 0), $skill === 'hitpoints' ? 10 : 1);
     }
 
     private function levelForXp(int $xp, int $startingLevel = 1): int
