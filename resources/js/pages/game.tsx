@@ -17,9 +17,7 @@ import {
     Hand,
     Heart,
     House,
-    Landmark,
     LockKeyhole,
-    MapPin,
     Orbit,
     Package,
     PawPrint,
@@ -36,13 +34,19 @@ import {
     WandSparkles,
     X,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Tab = 'combat' | 'skills' | 'inventory' | 'prayer' | 'settings';
 type InventoryView = 'items' | 'equipment';
 type Skill = { xp: number; level: number };
-type MapNode = { id: number; name: string; type: string; x: number; y: number };
+type MapNode = { id: number; name: string; x: number; y: number };
 type MapEdge = { from: number; to: number };
+type TravelState = {
+    destinationId: number;
+    destinationName: string;
+    endsAt: string;
+    remainingSeconds: number;
+} | null;
 type InventoryStack = {
     slot: number;
     id: number;
@@ -79,6 +83,7 @@ interface Props {
         nodes: MapNode[];
         edges: MapEdge[];
     };
+    travel: TravelState;
     skills: Record<string, Skill>;
     inventory: InventoryStack[];
     inventoryCapacity: number;
@@ -178,6 +183,7 @@ export default function Game({
     player,
     location,
     worldMap,
+    travel,
     skills,
     inventory,
     inventoryCapacity,
@@ -190,6 +196,8 @@ export default function Game({
     const [inventoryView, setInventoryView] = useState<InventoryView>('items');
     const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
     const [combatStance, setCombatStance] = useState('accurate');
+    const [selectedMapNode, setSelectedMapNode] = useState<number | null>(null);
+    const [travelRemaining, setTravelRemaining] = useState(travel?.remainingSeconds ?? 0);
     const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
     const drag = useRef<{ pointerId: number; x: number; y: number; offsetX: number; offsetY: number } | null>(null);
     const post = (url: string) => router.post(url, {}, { preserveScroll: true });
@@ -197,6 +205,43 @@ export default function Game({
     const connectedIds = new Set(location.connections.map((connection) => connection.id));
     const nodeById = new Map(worldMap.nodes.map((node) => [node.id, node]));
     const inventoryBySlot = new Map(inventory.map((item) => [item.slot, item]));
+    const selectedNode = worldMap.nodes.find((node) => node.id === selectedMapNode) ?? null;
+    const selectedConnection = location.connections.find((connection) => connection.id === selectedMapNode) ?? null;
+
+    useEffect(() => {
+        if (!travel) {
+            setTravelRemaining(0);
+            return;
+        }
+
+        setSelectedMapNode(null);
+        let timer: number | undefined;
+
+        const updateCountdown = () => {
+            const remaining = Math.max(
+                0,
+                Math.ceil((new Date(travel.endsAt).getTime() - Date.now()) / 1000),
+            );
+
+            setTravelRemaining(remaining);
+
+            if (remaining <= 0) {
+                if (timer !== undefined) window.clearInterval(timer);
+                router.reload();
+            }
+        };
+
+        updateCountdown();
+        timer = window.setInterval(updateCountdown, 250);
+
+        return () => {
+            if (timer !== undefined) window.clearInterval(timer);
+        };
+    }, [travel?.endsAt]);
+
+    useEffect(() => {
+        setSelectedMapNode(null);
+    }, [location.id]);
 
     const beginMapDrag = (event: React.PointerEvent<HTMLDivElement>) => {
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -258,7 +303,6 @@ export default function Game({
                                     <span>Vietovės žemėlapis</span>
                                     <small>Tempk žemėlapį pirštu</small>
                                 </div>
-                                <Landmark size={19} />
                             </div>
 
                             <div
@@ -272,7 +316,7 @@ export default function Game({
                                     className="world-map-canvas"
                                     style={{ transform: `translate3d(${mapOffset.x}px, ${mapOffset.y}px, 0)` }}
                                 >
-                                    <svg className="world-map-lines" viewBox="0 0 760 300" aria-hidden="true">
+                                    <svg className="world-map-lines" viewBox="0 0 700 640" aria-hidden="true">
                                         {worldMap.edges.map((edge) => {
                                             const from = nodeById.get(edge.from);
                                             const to = nodeById.get(edge.to);
@@ -292,32 +336,65 @@ export default function Game({
 
                                     {worldMap.nodes.map((node) => {
                                         const isCurrent = node.id === location.id;
-                                        const canTravel = connectedIds.has(node.id);
+                                        const isReachable = connectedIds.has(node.id);
+                                        const isSelected = node.id === selectedMapNode;
+                                        const isDestination = travel?.destinationId === node.id;
 
                                         return (
                                             <button
                                                 key={node.id}
                                                 type="button"
-                                                className={`world-map-node${isCurrent ? ' current' : ''}${canTravel ? ' reachable' : ''}`}
+                                                className={[
+                                                    'world-map-node',
+                                                    isCurrent ? 'current' : '',
+                                                    isReachable ? 'reachable' : '',
+                                                    isSelected ? 'selected' : '',
+                                                    isDestination ? 'traveling' : '',
+                                                ].filter(Boolean).join(' ')}
                                                 style={{ left: node.x, top: node.y }}
                                                 onPointerDown={(event) => event.stopPropagation()}
                                                 onClick={() => {
-                                                    if (canTravel && !isCurrent) post(`/game/travel/${node.id}`);
+                                                    if (!travel && !isCurrent) setSelectedMapNode(node.id);
                                                 }}
-                                                disabled={!isCurrent && !canTravel}
+                                                aria-current={isCurrent ? 'location' : undefined}
                                             >
-                                                <span className="world-map-dot"><MapPin size={17} /></span>
-                                                <span className="world-map-node-copy">
-                                                    <small>{node.type}</small>
-                                                    <strong>{node.name}</strong>
-                                                    {canTravel && !isCurrent && <em>Keliauti</em>}
-                                                    {isCurrent && <em>Dabartinė vieta</em>}
-                                                </span>
+                                                <span className="world-map-node-name">{node.name}</span>
+                                                <span className="world-map-dot" />
                                             </button>
                                         );
                                     })}
                                 </div>
                             </div>
+
+                            {travel ? (
+                                <div className="travel-action-panel traveling">
+                                    <div>
+                                        <span>Kelionė į</span>
+                                        <strong>{travel.destinationName}</strong>
+                                    </div>
+                                    <button type="button" disabled>
+                                        {travelRemaining > 0 ? `${travelRemaining} s` : 'Atvykstama...'}
+                                    </button>
+                                </div>
+                            ) : selectedNode ? (
+                                <div className="travel-action-panel">
+                                    <div>
+                                        <span>Pasirinkta vietovė</span>
+                                        <strong>{selectedNode.name}</strong>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        disabled={!selectedConnection}
+                                        onClick={() => {
+                                            if (selectedConnection) post(`/game/travel/${selectedConnection.id}`);
+                                        }}
+                                    >
+                                        {selectedConnection
+                                            ? `Keliauti · ${selectedConnection.travelSeconds} s`
+                                            : 'Nėra tiesioginio kelio'}
+                                    </button>
+                                </div>
+                            ) : null}
                         </section>
 
                         <section className="location-menu-section">
@@ -333,6 +410,7 @@ export default function Game({
                                     <button
                                         key={key}
                                         type="button"
+                                        disabled={Boolean(travel)}
                                         onClick={() => router.visit(`/game/location/${location.id}/${key}`)}
                                     >
                                         <Icon size={18} />
