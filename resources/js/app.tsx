@@ -6,6 +6,7 @@ import '../css/game-location-title.css';
 import '../css/game-player-bar.css';
 import '../css/combat.css';
 import '../css/shop.css';
+import '../css/equipment-actions.css';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { Map } from 'lucide-react';
 import { useEffect } from 'react';
@@ -336,6 +337,115 @@ function LiveGameTimers() {
     return null;
 }
 
+function EquipmentInteractions() {
+    useEffect(() => {
+        const equipmentSlot = (element: HTMLElement): string | null => {
+            const className = Array.from(element.classList)
+                .find((value) => value.startsWith('slot-'));
+
+            return className ? className.slice(5) : null;
+        };
+
+        const activate = (target: Element): boolean => {
+            const inventoryItem = target.closest<HTMLElement>(
+                '.inventory-grid-25 .item-slot.filled[data-equipment-action]',
+            );
+
+            if (inventoryItem) {
+                const grid = inventoryItem.parentElement;
+                if (!grid) {
+                    return false;
+                }
+
+                const cells = Array.from(grid.children)
+                    .filter((child): child is HTMLElement => child instanceof HTMLElement && child.classList.contains('item-slot'));
+                const index = cells.indexOf(inventoryItem);
+
+                if (index < 0) {
+                    return false;
+                }
+
+                router.post(`/game/equipment/equip/${index + 1}`, {}, {
+                    preserveScroll: true,
+                });
+
+                return true;
+            }
+
+            const equipped = target.closest<HTMLElement>(
+                '.equipment-grid .equipment-slot.equipped[data-equipment-action]',
+            );
+
+            if (equipped) {
+                const slot = equipmentSlot(equipped);
+                if (!slot) {
+                    return false;
+                }
+
+                router.post(`/game/equipment/unequip/${slot}`, {}, {
+                    preserveScroll: true,
+                });
+
+                return true;
+            }
+
+            return false;
+        };
+
+        const sync = () => {
+            document.querySelectorAll<HTMLElement>('.inventory-grid-25 .item-slot.filled').forEach((element) => {
+                element.dataset.equipmentAction = 'equip';
+                element.tabIndex = 0;
+                element.setAttribute('role', 'button');
+                element.setAttribute('aria-label', 'Ekipuoti daiktą');
+            });
+
+            document.querySelectorAll<HTMLElement>('.equipment-grid .equipment-slot.equipped').forEach((element) => {
+                element.dataset.equipmentAction = 'unequip';
+                element.tabIndex = 0;
+                element.setAttribute('role', 'button');
+                element.setAttribute('aria-label', 'Nuimti daiktą');
+            });
+        };
+
+        const onClick = (event: MouseEvent) => {
+            const target = event.target instanceof Element ? event.target : null;
+            if (target) {
+                activate(target);
+            }
+        };
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Enter' && event.key !== ' ') {
+                return;
+            }
+
+            const target = event.target instanceof Element ? event.target : null;
+            if (target && activate(target)) {
+                event.preventDefault();
+            }
+        };
+
+        const observer = new MutationObserver(sync);
+        observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+        });
+
+        sync();
+        document.addEventListener('click', onClick);
+        document.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            observer.disconnect();
+            document.removeEventListener('click', onClick);
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, []);
+
+    return null;
+}
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
@@ -362,6 +472,7 @@ createInertiaApp({
                 <GameHomeNavButton />
                 <WorldMapControls />
                 <LiveGameTimers />
+                <EquipmentInteractions />
                 <Toaster />
             </TooltipProvider>
         );
