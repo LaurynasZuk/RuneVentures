@@ -1,9 +1,25 @@
 .player-bar .vitals {
-    width: 9.5rem;
+    width: 9.8rem;
     display: flex;
     flex-direction: column;
     gap: .3rem;
     text-align: center;
+}
+
+.player-bar .vital-row {
+    display: grid;
+    grid-template-columns: 1.45rem minmax(0, 1fr);
+    align-items: center;
+    gap: .3rem;
+}
+
+.player-bar .vital-label {
+    color: #aaa49c;
+    font-size: .58rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: .04em;
+    text-align: left;
 }
 
 .player-bar .vital-bar {
@@ -62,9 +78,15 @@
     }
 
     .player-bar .vitals {
-        width: 8.6rem;
+        width: 8.8rem;
     }
 
+    .player-bar .vital-row {
+        grid-template-columns: 1.3rem minmax(0, 1fr);
+        gap: .22rem;
+    }
+
+    .player-bar .vital-label,
     .player-bar .vital-bar span {
         font-size: .54rem;
     }
