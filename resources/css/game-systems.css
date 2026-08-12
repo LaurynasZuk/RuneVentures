@@ -1,0 +1,411 @@
+@layer components {
+    .osrs-combat-level {
+        border-color: #81776d;
+        background: linear-gradient(180deg, #241a15 0%, #151315 100%);
+        box-shadow: inset 0 1px 0 rgba(232, 226, 216, .08), 0 1px 0 #050506;
+    }
+
+    .combat-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .55rem;
+    }
+
+    .combat-stat-tile,
+    .osrs-skill-tile {
+        border: 1px solid #665d55;
+        background: linear-gradient(145deg, rgba(87, 58, 42, .28), rgba(17, 16, 18, .95));
+        box-shadow: inset 0 0 0 1px rgba(196, 190, 181, .035), 0 1px 0 #050506;
+    }
+
+    .combat-stat-tile {
+        min-height: 68px;
+        padding: .7rem;
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        border-radius: .3rem;
+    }
+
+    .combat-stat-tile > span {
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #81796f;
+        background: #211914;
+        color: #d0cbc3;
+        border-radius: .22rem;
+    }
+
+    .combat-stat-tile div {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .combat-stat-tile small {
+        color: #969089;
+        font-size: .65rem;
+        line-height: 1;
+    }
+
+    .combat-stat-tile strong {
+        margin-top: .15rem;
+        color: #e3ddd4;
+        font-family: ui-serif, Georgia, serif;
+        font-size: 1.35rem;
+        line-height: 1;
+    }
+
+    .osrs-attack-styles button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: .35rem;
+    }
+
+    .osrs-skill-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .5rem;
+    }
+
+    .osrs-skill-tile {
+        position: relative;
+        min-height: 80px;
+        padding: .65rem .6rem;
+        border-radius: .28rem;
+    }
+
+    .osrs-skill-icon {
+        position: absolute;
+        top: .6rem;
+        left: .55rem;
+        color: #c6c0b8;
+    }
+
+    .osrs-skill-tile > div {
+        padding-left: 1.7rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .osrs-skill-tile strong {
+        overflow: hidden;
+        color: #aaa49d;
+        font-size: .64rem;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .osrs-skill-tile b {
+        color: #e1dbd2;
+        font-family: ui-serif, Georgia, serif;
+        font-size: 1.45rem;
+        line-height: 1.2;
+    }
+
+    .osrs-skill-tile small {
+        position: absolute;
+        right: .5rem;
+        bottom: .4rem;
+        color: #817b75;
+        font-size: .55rem;
+    }
+
+    .inventory-view-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        margin-bottom: .85rem;
+        border: 1px solid #62584f;
+        background: #0e0e10;
+        border-radius: .3rem;
+        overflow: hidden;
+    }
+
+    .inventory-view-tabs button {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: .35rem;
+        color: #8f8982;
+        font-size: .75rem;
+        border-right: 1px solid #443d38;
+        background: linear-gradient(180deg, #171416, #111113);
+    }
+
+    .inventory-view-tabs button:last-child {
+        border-right: 0;
+    }
+
+    .inventory-view-tabs button.active {
+        color: #e0dad2;
+        background: linear-gradient(180deg, #2d2019, #1d1715);
+        box-shadow: inset 0 -2px 0 #8b6045;
+    }
+
+    .inventory-summary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .55rem;
+        margin-bottom: .9rem;
+    }
+
+    .inventory-summary > div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .65rem .75rem;
+        border: 1px solid #5d554e;
+        background: #151315;
+        border-radius: .28rem;
+    }
+
+    .inventory-summary span {
+        color: #938d86;
+        font-size: .68rem;
+    }
+
+    .inventory-summary strong {
+        color: #ded8cf;
+        font-family: ui-serif, Georgia, serif;
+        font-size: 1rem;
+    }
+
+    .backpack-section-title,
+    .equipment-caption {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: .75rem;
+        margin: .2rem 0 .5rem;
+    }
+
+    .backpack-section-title span,
+    .equipment-caption span {
+        color: #c8c1b9;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+    }
+
+    .backpack-section-title small,
+    .equipment-caption small {
+        color: #77716b;
+        font-size: .58rem;
+        text-align: right;
+    }
+
+    .backpack-slots {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: .4rem;
+        margin-bottom: 1rem;
+    }
+
+    .backpack-slot {
+        aspect-ratio: 1 / 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .15rem;
+        border: 1px solid #55504a;
+        background: #101012;
+        color: #817b75;
+        border-radius: .25rem;
+        box-shadow: inset 0 0 0 1px #171719;
+    }
+
+    .backpack-slot.unlocked {
+        border-color: #7b6c61;
+        background: linear-gradient(145deg, rgba(93, 61, 43, .28), #171315);
+        color: #c9c3bb;
+    }
+
+    .backpack-slot.locked {
+        opacity: .5;
+    }
+
+    .backpack-slot strong,
+    .backpack-slot span {
+        max-width: 100%;
+        padding: 0 .15rem;
+        overflow: hidden;
+        font-size: .53rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .backpack-slot small {
+        color: #ad8061;
+        font-size: .55rem;
+    }
+
+    .inventory-grid-25 {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: .4rem;
+    }
+
+    .inventory-grid-25 .item-slot {
+        border-color: #55504b;
+        border-radius: .25rem;
+        background: linear-gradient(145deg, #121214, #0b0b0d);
+    }
+
+    .inventory-grid-25 .item-slot.filled {
+        border-color: #77685e;
+        background: linear-gradient(145deg, rgba(96, 63, 45, .42), #171315 72%);
+    }
+
+    .inventory-grid-25 .item-slot > small {
+        position: absolute;
+        top: .2rem;
+        left: .28rem;
+        color: #4f4a46;
+        font-size: .5rem;
+    }
+
+    .inventory-grid-25 .item-slot em {
+        position: absolute;
+        left: .25rem;
+        bottom: .18rem;
+        color: #77716a;
+        font-size: .48rem;
+        font-style: normal;
+    }
+
+    .equipment-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-areas:
+            '. head .'
+            'cape neck ammo'
+            'weapon body shield'
+            '. legs .'
+            'hands feet ring';
+        gap: .55rem;
+        padding: .9rem;
+        border: 1px solid #655b53;
+        background:
+            radial-gradient(circle at center, rgba(89, 59, 42, .16), transparent 55%),
+            #0e0e10;
+        border-radius: .3rem;
+        box-shadow: inset 0 0 0 1px rgba(199, 191, 181, .03);
+    }
+
+    .equipment-slot {
+        min-height: 72px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .25rem;
+        border: 1px solid #57514c;
+        background: linear-gradient(145deg, #171416, #0d0d0f);
+        color: #87817b;
+        border-radius: .25rem;
+        text-align: center;
+        box-shadow: inset 0 0 0 1px #1e1b1d;
+    }
+
+    .equipment-slot.equipped {
+        border-color: #8a7769;
+        color: #d1cbc3;
+        background: linear-gradient(145deg, rgba(105, 68, 48, .34), #171315);
+    }
+
+    .equipment-slot span,
+    .equipment-slot strong {
+        max-width: 95%;
+        overflow: hidden;
+        font-size: .58rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .slot-head { grid-area: head; }
+    .slot-cape { grid-area: cape; }
+    .slot-neck { grid-area: neck; }
+    .slot-ammo { grid-area: ammo; }
+    .slot-weapon { grid-area: weapon; }
+    .slot-body { grid-area: body; }
+    .slot-shield { grid-area: shield; }
+    .slot-legs { grid-area: legs; }
+    .slot-hands { grid-area: hands; }
+    .slot-feet { grid-area: feet; }
+    .slot-ring { grid-area: ring; }
+
+    .prayer-mana-card {
+        padding: 1rem;
+        border: 1px solid #6b625a;
+        background: linear-gradient(145deg, rgba(73, 54, 45, .28), #121214 68%);
+        border-radius: .3rem;
+        box-shadow: inset 0 1px 0 rgba(225, 219, 210, .05);
+    }
+
+    .prayer-mana-heading {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        color: #cbc5bd;
+    }
+
+    .prayer-mana-heading > svg {
+        width: 42px;
+        height: 42px;
+        padding: .55rem;
+        border: 1px solid #7f7770;
+        background: #1a1718;
+        border-radius: .25rem;
+    }
+
+    .prayer-mana-heading div {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .prayer-mana-heading span {
+        color: #98928b;
+        font-size: .72rem;
+    }
+
+    .prayer-mana-heading strong {
+        color: #e0dad2;
+        font-family: ui-serif, Georgia, serif;
+        font-size: 1.45rem;
+    }
+
+    .prayer-mana-bar {
+        height: 10px;
+        margin-top: .85rem;
+        overflow: hidden;
+        border: 1px solid #4f4944;
+        background: #08080a;
+        border-radius: .18rem;
+    }
+
+    .prayer-mana-bar i {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, #746d67, #c0bbb3);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+    }
+
+    .prayer-mana-card p {
+        margin-top: .65rem;
+        color: #827c75;
+        font-size: .68rem;
+    }
+
+    @media (max-width: 390px) {
+        .combat-stats-grid,
+        .osrs-skill-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+}
