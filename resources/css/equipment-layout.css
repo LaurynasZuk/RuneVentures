@@ -1,0 +1,45 @@
+@layer components {
+    .game-shell .inventory-grid-25 .item-slot {
+        width: 100%;
+        min-height: 0;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        box-sizing: border-box;
+        padding: .35rem;
+    }
+
+    .game-shell .equipment-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-areas:
+            '. head .'
+            'cape neck body'
+            'hands legs feet'
+            '. ring .'
+            'weapon shield ammo';
+        gap: .55rem;
+    }
+
+    .game-shell .equipment-slot {
+        width: 100%;
+        min-height: 0;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        box-sizing: border-box;
+        padding: .4rem;
+    }
+
+    .game-shell .equipment-grid .slot-weapon,
+    .game-shell .equipment-grid .slot-shield,
+    .game-shell .equipment-grid .slot-ammo {
+        margin-top: .55rem;
+        border-color: #77685e;
+        background: linear-gradient(145deg, rgba(96, 63, 45, .26), #111113 72%);
+    }
+
+    .game-shell .equipment-grid .slot-weapon.equipped,
+    .game-shell .equipment-grid .slot-shield.equipped,
+    .game-shell .equipment-grid .slot-ammo.equipped {
+        border-color: #927866;
+        background: linear-gradient(145deg, rgba(112, 72, 50, .38), #171315 72%);
+    }
+}
